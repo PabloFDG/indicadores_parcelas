@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Parcela CABA — Indicadores Urbanísticos</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app">
+
+  <header class="header">
+    <div class="logo">
+      <svg viewBox="0 0 18 18" fill="none">
+        <rect x="2" y="9" width="3.5" height="7" fill="#C0DD97"/>
+        <rect x="7" y="6" width="3.5" height="10" fill="#C0DD97"/>
+        <rect x="12" y="2" width="3.5" height="14" fill="#C0DD97"/>
+      </svg>
+    </div>
+    <div>
+      <div class="app-name">Parcela CABA</div>
+      <div class="app-sub">Indicadores urbanísticos · Caballito</div>
+    </div>
+  </header>
+
+  <div class="search-bar">
+    <input type="text" id="input-dir" placeholder="Ej: Rivadavia 5000, Acoyte 100..." />
+    <button id="btn-buscar" onclick="consultar()">Consultar</button>
+  </div>
+
+  <div class="error-msg" id="error-msg">⚠️ <span id="error-text"></span></div>
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    Consultando datos urbanísticos…
+  </div>
+
+  <div class="address-badge" id="address-badge">
+    <svg viewBox="0 0 12 12" fill="none">
+      <circle cx="6" cy="5" r="2" stroke="#27500A" stroke-width="1"/>
+      <path d="M6 11C6 11 2 7.5 2 5a4 4 0 018 0c0 2.5-4 6-4 6z" stroke="#27500A" stroke-width="1" fill="none"/>
+    </svg>
+    <span id="badge-text"></span>
+  </div>
+
+  <div class="results" id="results">
+    <div class="col-data">
+
+      <div>
+        <div class="section-label">capacidad constructiva</div>
+        <div class="card">
+          <div class="metrics-grid">
+            <div class="metric-big">
+              <div class="metric-label">superficie edificable máx.</div>
+              <div class="metric-value" id="m-edif-max">— <span class="metric-unit">m²</span></div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">potencial remanente</div>
+              <div class="metric-value" id="m-remanente">— <span class="metric-unit">m²</span></div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">altura máxima</div>
+              <div class="metric-value" id="m-altura">— <span class="metric-unit">m</span></div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">pisos estimados</div>
+              <div class="metric-value" id="m-pisos">— <span class="metric-unit">p</span></div>
+            </div>
+          </div>
+          <div class="potential-bar">
+            <div class="potential-fill" id="barra-potencial" style="width:0%"></div>
+          </div>
+          <div class="potential-labels">
+            <span id="label-construido">— m² construidos</span>
+            <span id="label-disponible">— m² disponibles</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-label">terreno y normativa</div>
+        <div class="card">
+          <div class="info-row">
+            <span class="info-label">Superficie del terreno</span>
+            <span class="info-value" id="i-sup">—</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Frente / fondo</span>
+            <span class="info-value" id="i-ff">—</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">FOT</span>
+            <span class="info-value" id="i-fot">—</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Distrito</span>
+            <span class="info-value" id="i-distrito">—</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Uso permitido</span>
+            <span class="info-value" id="i-uso">—</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Restricciones</span>
+            <div class="badge-row" id="i-restricciones"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="col-map">
+
+      <div>
+        <div class="section-label">ubicación de la parcela</div>
+        <div id="map"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-label" style="margin-bottom:10px">identificación</div>
+        <div class="info-row">
+          <span class="info-label">SMP</span>
+          <span class="info-value mono" id="i-smp">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Edificación actual</span>
+          <span class="info-value" id="i-edif-actual">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Coordenadas</span>
+          <span class="info-value mono" id="i-coords">—</span>
+        </div>
+      </div>
+
+      <button class="share-btn" onclick="compartir()">
+        <svg viewBox="0 0 14 14" fill="none">
+          <circle cx="11" cy="2.5" r="1.5" stroke="currentColor" stroke-width="1"/>
+          <circle cx="11" cy="11.5" r="1.5" stroke="currentColor" stroke-width="1"/>
+          <circle cx="3"  cy="7"   r="1.5" stroke="currentColor" stroke-width="1"/>
+          <line x1="4.3" y1="6.2"  x2="9.7" y2="3.3"  stroke="currentColor" stroke-width="1"/>
+          <line x1="4.3" y1="7.8"  x2="9.7" y2="10.7" stroke="currentColor" stroke-width="1"/>
+        </svg>
+        Compartir resultado
+      </button>
+
+    </div>
+  </div>
+
+  <footer class="footer">
+    Datos: Catastro GCBA · Código Urbanístico CABA (31/12/2024) · OpenStreetMap · CARTO
+  </footer>
+
+</div>
+
+<div class="toast" id="toast">¡Enlace copiado al portapapeles!</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
