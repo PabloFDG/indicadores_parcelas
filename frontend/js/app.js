@@ -1,5 +1,4 @@
-// ── Cambiá esta URL cuando subas el backend a Render ─────────────────────
-const API_URL = "http://localhost:8000";
+const API_URL = "https://tif-urbanistico.onrender.com";
 
 let mapa = null;
 let marcador = null;
