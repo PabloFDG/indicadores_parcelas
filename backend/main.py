@@ -110,8 +110,8 @@ def get_indicadores_cu(smp: str) -> dict:
         "fot":                    limpiar_nan(r.get("fot_em_1")),
         "uso_permitido":          uso_texto,
         "riesgo_hidrico":         r.get("rh") == "1" or r.get("rh") == 1,
-        "proteccion_patrimonial": r.get("catalogado") == "1" or r.get("catalogado") == 1,
-
+        "proteccion_patrimonial": r.get("catalogado") == "1" or r.get("catalogado") == 1
+    }
 
 # ── Endpoints ────────────────────────────────────────────────────────────
 
