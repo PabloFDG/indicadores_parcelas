@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-import pandas as pd
+import polars as pl
 import requests
 import math
 
@@ -19,8 +19,8 @@ app.add_middleware(
 
 # ── Carga del CSV al arrancar el servidor ────────────────────────────────
 print("Cargando datos del Código Urbanístico...")
-cu = pd.read_csv("data/codigo_urbanistico_completo.csv", low_memory=False)
-cu["smp"] = cu["smp"].str.strip().str.lower()
+cu = pl.read_csv("data/codigo_urbanistico_completo.csv", infer_schema_length=0)
+cu = cu.with_columns(pl.col("smp").str.strip_chars().str.to_lowercase())
 print(f"✅ {len(cu)} registros cargados")
 
 # ── Mapeo de códigos numéricos a texto legible ───────────────────────────
@@ -92,28 +92,25 @@ def get_indicadores_cu(smp: str) -> dict:
     y devuelve los indicadores urbanísticos correspondientes.
     """
     smp_norm = smp.strip().lower()
-    fila = cu[cu["smp"] == smp_norm]
-    if fila.empty:
+    fila = cu.filter(pl.col("smp") == smp_norm)
+    if fila.is_empty():
         return {}
-    r = fila.iloc[0]
+    r = fila.row(0, named=True)
 
-    # Altura: intentamos uni_edif_1 primero, si es null usamos uni_edif_2
     altura = limpiar_nan(r.get("uni_edif_1"))
     if altura is None:
         altura = limpiar_nan(r.get("uni_edif_2"))
 
-    # Uso del suelo: convertimos código numérico a texto legible
     uso_codigo = limpiar_nan(r.get("uso_1"))
-    uso_texto = USOS.get(int(uso_codigo), f"Código {uso_codigo}") if uso_codigo else None
+    uso_texto = USOS.get(int(float(uso_codigo)), f"Código {uso_codigo}") if uso_codigo else None
 
     return {
         "distrito":               limpiar_nan(r.get("dist_1_esp")),
         "altura_maxima_m":        altura,
         "fot":                    limpiar_nan(r.get("fot_em_1")),
         "uso_permitido":          uso_texto,
-        "riesgo_hidrico":         bool(r.get("rh", 0)),
-        "proteccion_patrimonial": bool(r.get("catalogado", 0)),
-    }
+        "riesgo_hidrico":         r.get("rh") == "1" or r.get("rh") == 1,
+        "proteccion_patrimonial": r.get("catalogado") == "1" or r.get("catalogado") == 1,
 
 
 # ── Endpoints ────────────────────────────────────────────────────────────
