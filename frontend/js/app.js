@@ -79,13 +79,22 @@ function renderizar(d) {
   texto("m-altura",    d.altura_maxima_m != null ? fmt(d.altura_maxima_m, 1) : "—");
   texto("m-pisos",     d.pisos_estimados ?? "—");
 
-  // Barra de potencial
-  if (maxM2 && actM2 != null) {
-    const pct = Math.min(100, Math.round((actM2 / maxM2) * 100));
-    document.getElementById("barra-potencial").style.width = pct + "%";
-    document.getElementById("label-construido").textContent = `${fmt(actM2)} m² construidos`;
-    document.getElementById("label-disponible").textContent =
-      rem != null ? `${fmt(rem)} m² disponibles` : "— m² disponibles";
+  // Barra de potencial: solo mostrar si hay FOT y superficie edificable válida
+  const maxM2 = d.superficie_edificable_max_m2;
+  const actM2 = d.superficie_edificada_actual_m2;
+  const rem   = d.potencial_remanente_m2;
+
+  if (maxM2 && actM2 != null && maxM2 > 0) {
+      const pct = Math.min(100, Math.round((actM2 / maxM2) * 100));
+      document.getElementById("barra-potencial").style.width = pct + "%";
+      document.getElementById("label-construido").textContent = `${fmt(actM2)} m² construidos`;
+      document.getElementById("label-disponible").textContent =
+          rem != null ? `${fmt(rem)} m² disponibles` : "— m² disponibles";
+  } else {
+      // Sin FOT: ocultar la barra y mostrar mensaje
+      document.getElementById("barra-potencial").style.width = "0%";
+      document.getElementById("label-construido").textContent = "Sin datos de FOT para calcular potencial";
+      document.getElementById("label-disponible").textContent = "";
   }
 
   // Terreno y normativa

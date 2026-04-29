@@ -32,6 +32,7 @@ print(f"✅ {len(cu)} registros cargados")
 
 # ── Mapeo de códigos numéricos a texto legible ───────────────────────────
 USOS = {
+    0: "Sin uso asignado",
     1: "Residencial",
     2: "Residencial mixto",
     3: "Central",
