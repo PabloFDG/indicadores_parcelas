@@ -56,6 +56,14 @@ async function consultar() {
 
 // ── Renderizado de resultados ─────────────────────────────────────────────
 function renderizar(d) {
+  // Si el SMP viene vacío, la API de catastro no tiene datos para esa dirección
+  if (!d.smp) {
+    document.getElementById("error-text").textContent =
+      "No se encontraron datos catastrales para esta dirección. Probá con el número de puerta principal del edificio o una dirección cercana.";
+    mostrar("error-msg", "block");
+    ocultar("loading");
+    return;
+  }
   // Badge dirección
   document.getElementById("badge-text").textContent =
     `${d.direccion}  ·  SMP ${d.smp}`;
