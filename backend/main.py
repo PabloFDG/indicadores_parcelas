@@ -12,8 +12,15 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
+    # qué dominios pueden hacer llamadas a esta API
+    # "*" significa cualquiera (útil en desarrollo, riesgoso en producción)
     allow_origins=["https://parcelas-caba.netlify.app"],
+    # allow_methods: qué métodos HTTP están permitidos
+    # "*" permite GET, POST, PUT, DELETE, etc.
+    # Esta API solo usa GET
     allow_methods=["*"],
+    # allow_headers: qué cabeceras HTTP puede enviar el cliente
+    # "*" permite cualquier cabecera (Content-Type, Authorization, etc.)
     allow_headers=["*"],
 )
 
