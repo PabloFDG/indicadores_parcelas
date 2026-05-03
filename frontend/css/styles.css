@@ -81,6 +81,16 @@ body {
 .search-bar button:hover    { background: #2d5309; }
 .search-bar button:disabled { background: #9aab8a; cursor: not-allowed; }
 
+#sugerencias li {
+    padding: 8px 14px;
+    cursor: pointer;
+    color: #1a1a1a;
+}
+#sugerencias li:hover {
+    background: #eaf3de;
+    color: #27500A;
+}
+
 /* ── ESTADOS ─────────────────────────────────────────────── */
 .loading {
   display: none;

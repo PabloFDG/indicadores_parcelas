@@ -6,6 +6,7 @@
   <title>Parcela CABA — Indicadores Urbanísticos</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -24,9 +25,28 @@
     </div>
   </header>
 
-  <div class="search-bar">
-    <input type="text" id="input-dir" placeholder="Ej: Rivadavia 5000, Acoyte 100..." />
-    <button id="btn-buscar" onclick="consultar()">Consultar</button>
+  <div style="position: relative;">
+    <div class="search-bar">
+        <input type="text" id="input-dir"
+            placeholder="Ej: Rivadavia 5000, Acoyte 100..." />
+        <button id="btn-buscar" onclick="consultar()">Consultar</button>
+    </div>
+    <ul id="sugerencias" style="
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        z-index: 100;
+        background: white;
+        border: 1px solid #ccd5c0;
+        border-radius: 8px;
+        list-style: none;
+        margin: 4px 0 0 0;
+        padding: 4px 0;
+        width: calc(100% - 122px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        font-size: 13px;
+    "></ul>
   </div>
 
   <div class="error-msg" id="error-msg">⚠️ <span id="error-text"></span></div>
@@ -132,15 +152,23 @@
         </div>
       </div>
 
-      <button class="share-btn" onclick="compartir()">
+      <button class="share-btn" onclick="descargarPDF()">
         <svg viewBox="0 0 14 14" fill="none">
-          <circle cx="11" cy="2.5" r="1.5" stroke="currentColor" stroke-width="1"/>
-          <circle cx="11" cy="11.5" r="1.5" stroke="currentColor" stroke-width="1"/>
-          <circle cx="3"  cy="7"   r="1.5" stroke="currentColor" stroke-width="1"/>
-          <line x1="4.3" y1="6.2"  x2="9.7" y2="3.3"  stroke="currentColor" stroke-width="1"/>
-          <line x1="4.3" y1="7.8"  x2="9.7" y2="10.7" stroke="currentColor" stroke-width="1"/>
+            <path d="M7 1v8M4 6l3 3 3-3M2 11h10"
+                stroke="currentColor" stroke-width="1.2"
+                stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        Compartir resultado
+        Descargar ficha PDF
+      </button>
+      <button class="share-btn" onclick="compartir()" style="margin-top: 6px;">
+          <svg viewBox="0 0 14 14" fill="none">
+              <circle cx="11" cy="2.5" r="1.5" stroke="currentColor" stroke-width="1"/>
+              <circle cx="11" cy="11.5" r="1.5" stroke="currentColor" stroke-width="1"/>
+              <circle cx="3" cy="7" r="1.5" stroke="currentColor" stroke-width="1"/>
+              <line x1="4.3" y1="6.2" x2="9.7" y2="3.3" stroke="currentColor" stroke-width="1"/>
+              <line x1="4.3" y1="7.8" x2="9.7" y2="10.7" stroke="currentColor" stroke-width="1"/>
+          </svg>
+          Compartir resultado
       </button>
 
     </div>
