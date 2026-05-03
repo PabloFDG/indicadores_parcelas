@@ -222,138 +222,157 @@ function descargarPDF() {
         ? Number(n).toLocaleString("es-AR", { maximumFractionDigits: dec })
         : "—";
 
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
+    // Capturamos el mapa como imagen antes de generar el PDF
+    const mapaEl = document.getElementById("map");
+    const capturarMapa = mapaEl && mapa
+        ? html2canvas(mapaEl, { useCORS: true, scale: 1.5 })
+        : Promise.resolve(null);
 
-    // Paleta de colores (RGB)
-    const verde = [59, 109, 17];
-    const gris  = [107, 122, 94];
-    const negro = [26, 26, 26];
+    capturarMapa.then(canvas => {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
 
-    // ── Header verde ──────────────────────────────────────────────────────
-    doc.setFillColor(...verde);
-    doc.rect(0, 0, 210, 22, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    doc.text("Parcela CABA — Indicadores Urbanísticos", 14, 10);
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.text("Caballito · Ciudad Autónoma de Buenos Aires", 14, 17);
+        // ── Paleta azul formal ────────────────────────────────────────
+        const azul       = [30, 64, 175];    // azul oscuro — header
+        const azulClaro  = [219, 234, 254];  // azul muy claro — fondo secciones
+        const azulMedio  = [59, 130, 246];   // azul medio — títulos de sección
+        const negro      = [15, 23, 42];     // casi negro — valores
+        const gris       = [71, 85, 105];    // gris azulado — labels
 
-    // ── Dirección y SMP ───────────────────────────────────────────────────
-    doc.setTextColor(...negro);
-    doc.setFontSize(13);
-    doc.setFont("helvetica", "bold");
-    doc.text(d.direccion || "—", 14, 32);
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...gris);
-    doc.text(`SMP: ${d.smp ? d.smp.toUpperCase() : "—"}`, 14, 38);
+        // ── Header ────────────────────────────────────────────────────
+        doc.setFillColor(...azul);
+        doc.rect(0, 0, 210, 24, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(15);
+        doc.setFont("helvetica", "bold");
+        doc.text("Parcela CABA", 14, 10);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.text("Indicadores Urbanísticos · Caballito · Ciudad Autónoma de Buenos Aires", 14, 17);
+        doc.setFontSize(8);
+        doc.text(`Generado el ${new Date().toLocaleDateString("es-AR")}`, 155, 10);
 
-    // Línea separadora verde
-    doc.setDrawColor(...verde);
-    doc.setLineWidth(0.5);
-    doc.line(14, 42, 196, 42);
-
-    // ── Sección: capacidad constructiva ───────────────────────────────────
-    let y = 50;
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...verde);
-    doc.text("CAPACIDAD CONSTRUCTIVA", 14, y);
-    y += 6;
-
-    const metricas = [
-        ["Superficie edificable máx.", d.superficie_edificable_max_m2 != null ? `${f(d.superficie_edificable_max_m2)} m²` : "—"],
-        ["Potencial remanente",         d.potencial_remanente_m2 != null ? `${f(d.potencial_remanente_m2)} m²` : "—"],
-        ["Altura máxima permitida",     d.altura_maxima_m != null ? `${f(d.altura_maxima_m, 1)} m` : "—"],
-        ["Pisos estimados",             d.pisos_estimados != null ? `${d.pisos_estimados} pisos` : "—"],
-        ["FOT",                         d.fot != null ? f(d.fot, 2) : "—"],
-    ];
-    metricas.forEach(([label, val]) => {
+        // ── Dirección ─────────────────────────────────────────────────
+        doc.setTextColor(...negro);
+        doc.setFontSize(13);
+        doc.setFont("helvetica", "bold");
+        doc.text(d.direccion || "—", 14, 34);
+        doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(...gris);
-        doc.setFontSize(8);
-        doc.text(label, 14, y);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(...negro);
-        doc.setFontSize(9);
-        doc.text(val, 110, y);
-        y += 7;
+        doc.text(`SMP: ${d.smp ? d.smp.toUpperCase() : "—"}`, 14, 40);
+
+        // Línea separadora
+        doc.setDrawColor(...azul);
+        doc.setLineWidth(0.8);
+        doc.line(14, 44, 196, 44);
+
+        // ── Función para dibujar una sección ──────────────────────────
+        function seccion(titulo, filas, yInicio) {
+            // Fondo azul claro de la sección
+            doc.setFillColor(...azulClaro);
+            doc.roundedRect(14, yInicio, 182, 7, 1, 1, "F");
+
+            // Título de la sección
+            doc.setFontSize(8);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(...azulMedio);
+            doc.text(titulo, 17, yInicio + 5);
+
+            let y = yInicio + 12;
+            filas.forEach(([label, val], i) => {
+                // Fondo alternado para legibilidad
+                if (i % 2 === 0) {
+                    doc.setFillColor(241, 245, 249);
+                    doc.rect(14, y - 4, 182, 7, "F");
+                }
+                doc.setFont("helvetica", "normal");
+                doc.setTextColor(...gris);
+                doc.setFontSize(8);
+                doc.text(label, 17, y);
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(...negro);
+                doc.setFontSize(9);
+                doc.text(String(val), 110, y);
+                y += 8;
+            });
+            return y + 4;  // retorna la Y final de la sección
+        }
+
+        // ── Sección: capacidad constructiva ───────────────────────────
+        const potencial = d.potencial_remanente_m2 != null
+            ? (d.potencial_remanente_m2 < 0
+                ? "Por encima del FOT vigente"
+                : `${f(d.potencial_remanente_m2)} m²`)
+            : "—";
+
+        let y = seccion("CAPACIDAD CONSTRUCTIVA", [
+            ["Superficie edificable máx.", d.superficie_edificable_max_m2 != null ? `${f(d.superficie_edificable_max_m2)} m²` : "—"],
+            ["Potencial remanente",         potencial],
+            ["Altura máxima permitida",     d.altura_maxima_m != null ? `${f(d.altura_maxima_m, 1)} m` : "—"],
+            ["Pisos estimados",             d.pisos_estimados != null ? `${d.pisos_estimados} pisos` : "—"],
+            ["FOT",                         d.fot != null ? f(d.fot, 2) : "—"],
+        ], 50);
+
+        // ── Sección: terreno y normativa ──────────────────────────────
+        y = seccion("TERRENO Y NORMATIVA", [
+            ["Superficie del terreno",  d.superficie_terreno_m2 != null ? `${f(d.superficie_terreno_m2)} m²` : "—"],
+            ["Frente / fondo",          d.frente_m && d.fondo_m ? `${f(d.frente_m, 2)} m · ${f(d.fondo_m, 2)} m` : "—"],
+            ["Distrito urbanístico",    d.distrito || "—"],
+            ["Uso permitido",           d.uso_permitido || "—"],
+            ["Protección patrimonial",  d.proteccion_patrimonial ? "Sí" : "No"],
+            ["Riesgo hídrico",          d.riesgo_hidrico ? "Sí" : "No"],
+        ], y);
+
+        // ── Sección: identificación ───────────────────────────────────
+        y = seccion("IDENTIFICACIÓN", [
+            ["SMP",          d.smp ? d.smp.toUpperCase() : "—"],
+            ["Coordenadas",  d.coordenadas ? `${d.coordenadas.lat.toFixed(6)}, ${d.coordenadas.lng.toFixed(6)}` : "—"],
+        ], y);
+
+        // ── Imagen del mapa ───────────────────────────────────────────
+        if (canvas) {
+            const imgData = canvas.toDataURL("image/jpeg", 0.85);
+            const mapY = y + 2;
+            const mapH = 55;  // altura del mapa en el PDF
+
+            // Borde azul alrededor del mapa
+            doc.setDrawColor(...azul);
+            doc.setLineWidth(0.4);
+            doc.roundedRect(14, mapY, 182, mapH + 6, 2, 2, "S");
+
+            // Label encima del mapa
+            doc.setFillColor(...azulClaro);
+            doc.roundedRect(14, mapY, 182, 7, 1, 1, "F");
+            doc.setFontSize(8);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(...azulMedio);
+            doc.text("UBICACIÓN DE LA PARCELA", 17, mapY + 5);
+
+            // Imagen del mapa
+            doc.addImage(imgData, "JPEG", 15, mapY + 8, 180, mapH);
+            y = mapY + mapH + 16;
+        }
+
+        // ── Footer ────────────────────────────────────────────────────
+        const footerY = 275;
+        doc.setFillColor(...azulClaro);
+        doc.rect(0, footerY, 210, 22, "F");
+        doc.setDrawColor(...azul);
+        doc.setLineWidth(0.4);
+        doc.line(0, footerY, 210, footerY);
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...gris);
+        doc.text("Fuentes: Catastro GCBA · Código Urbanístico CABA (31/12/2024) · USIG · OpenStreetMap · CARTO", 14, footerY + 7);
+        doc.text("Los datos son orientativos. Verificar con organismos oficiales del GCBA antes de tomar decisiones.", 14, footerY + 13);
+
+        // ── Guardar ───────────────────────────────────────────────────
+        const nombre = d.smp
+            ? `parcela_${d.smp.replace(/-/g, "_").toUpperCase()}.pdf`
+            : "parcela_caba.pdf";
+        doc.save(nombre);
     });
-
-    // Línea separadora gris
-    y += 2;
-    doc.setDrawColor(224, 232, 216);
-    doc.setLineWidth(0.3);
-    doc.line(14, y, 196, y);
-    y += 8;
-
-    // ── Sección: terreno y normativa ──────────────────────────────────────
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...verde);
-    doc.text("TERRENO Y NORMATIVA", 14, y);
-    y += 6;
-
-    const normativa = [
-        ["Superficie del terreno",  d.superficie_terreno_m2 != null ? `${f(d.superficie_terreno_m2)} m²` : "—"],
-        ["Frente / fondo",          d.frente_m && d.fondo_m ? `${f(d.frente_m, 2)} m · ${f(d.fondo_m, 2)} m` : "—"],
-        ["Distrito urbanístico",    d.distrito || "—"],
-        ["Uso permitido",           d.uso_permitido || "—"],
-        ["Protección patrimonial",  d.proteccion_patrimonial ? "Sí" : "No"],
-        ["Riesgo hídrico",          d.riesgo_hidrico ? "Sí" : "No"],
-    ];
-    normativa.forEach(([label, val]) => {
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(...gris);
-        doc.setFontSize(8);
-        doc.text(label, 14, y);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(...negro);
-        doc.setFontSize(9);
-        doc.text(val, 110, y);
-        y += 7;
-    });
-
-    // Línea separadora gris
-    y += 2;
-    doc.setDrawColor(224, 232, 216);
-    doc.line(14, y, 196, y);
-    y += 8;
-
-    // ── Coordenadas ───────────────────────────────────────────────────────
-    if (d.coordenadas) {
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(...gris);
-        doc.setFontSize(8);
-        doc.text("Coordenadas", 14, y);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(...negro);
-        doc.setFontSize(9);
-        doc.text(
-            `${d.coordenadas.lat.toFixed(6)}, ${d.coordenadas.lng.toFixed(6)}`,
-            110, y
-        );
-        y += 10;
-    }
-
-    // ── Footer ────────────────────────────────────────────────────────────
-    doc.setFillColor(247, 248, 245);
-    doc.rect(0, 272, 210, 25, "F");
-    doc.setFontSize(7);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...gris);
-    doc.text("Fuentes: Catastro GCBA · Código Urbanístico CABA (31/12/2024) · USIG", 14, 280);
-    doc.text(`Generado el ${new Date().toLocaleDateString("es-AR")} mediante Parcela CABA`, 14, 286);
-    doc.text("Los datos son orientativos. Verificar con organismos oficiales del GCBA.", 14, 292);
-
-    // Guardar con nombre basado en el SMP
-    const nombre = d.smp
-        ? `parcela_${d.smp.replace(/-/g, "_").toUpperCase()}.pdf`
-        : "parcela_caba.pdf";
-    doc.save(nombre);
 }
 
 // ── Compartir resultado ───────────────────────────────────────────────────
