@@ -124,19 +124,32 @@ function renderizar(d) {
 
     // Tarjeta de capacidad constructiva
     texto("m-edif-max",  maxM2 != null ? fmt(maxM2) : "—");
-    texto("m-remanente", rem   != null ? fmt(rem)   : "—");
+    if (rem != null && rem < 0) {
+      texto("m-remanente", "—");
+      document.getElementById("m-remanente").closest(".metric").title =
+          "Capacidad constructiva por encima del FOT vigente";
+    } else {
+        texto("m-remanente", rem != null ? fmt(rem) : "—");
+    }
     texto("m-altura",    d.altura_maxima_m != null ? fmt(d.altura_maxima_m, 1) : "—");
     texto("m-pisos",     d.pisos_estimados ?? "—");
 
     // Barra de potencial: solo si hay FOT y superficie edificable válida
     if (maxM2 && actM2 != null && maxM2 > 0) {
-        const pct = Math.min(100, Math.round((actM2 / maxM2) * 100));
-        document.getElementById("barra-potencial").style.width = pct + "%";
-        document.getElementById("label-construido").textContent = `${fmt(actM2)} m² construidos`;
-        document.getElementById("label-disponible").textContent =
-            rem != null ? `${fmt(rem)} m² disponibles` : "— m² disponibles";
+      const pct = Math.min(100, Math.round((actM2 / maxM2) * 100));
+      document.getElementById("barra-potencial").style.width = Math.min(100, pct) + "%";
+
+      document.getElementById("label-construido").textContent = `${fmt(actM2)} m² construidos`;
+
+      // Si el remanente es negativo: construido supera el FOT vigente
+      if (rem != null && rem < 0) {
+          document.getElementById("label-disponible").textContent =
+              "Capacidad constructiva por encima del FOT vigente";
+      } else {
+          document.getElementById("label-disponible").textContent =
+              rem != null ? `${fmt(rem)} m² disponibles` : "— m² disponibles";
+      }
     } else {
-        // Sin FOT: ocultar barra y mostrar mensaje
         document.getElementById("barra-potencial").style.width = "0%";
         document.getElementById("label-construido").textContent = "Sin datos de FOT para calcular potencial";
         document.getElementById("label-disponible").textContent = "";
