@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AR · Parcela</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0a0f1a;
+      color: #e8f0fe;
+      font-family: 'Courier New', monospace;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* --- PANTALLA INICIAL --- */
+    #start-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+      padding: 40px 24px;
+      text-align: center;
+    }
+
+    .logo-box {
+      width: 72px;
+      height: 72px;
+      border: 2px solid #4ade80;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .logo-box::before {
+      content: '';
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border: 1px solid #4ade8066;
+      transform: rotate(45deg);
+    }
+    .logo-box svg { width: 32px; height: 32px; stroke: #4ade80; fill: none; }
+
+    h1 {
+      font-size: 13px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: #4ade80;
+      font-weight: normal;
+    }
+
+    .subtitle {
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      color: #64748b;
+      text-transform: uppercase;
+    }
+
+    #btn-ar {
+      background: transparent;
+      border: 1px solid #4ade80;
+      color: #4ade80;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 16px 40px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s;
+    }
+    #btn-ar:hover { background: #4ade8011; }
+    #btn-ar:disabled {
+      border-color: #334155;
+      color: #334155;
+      cursor: not-allowed;
+    }
+    #btn-ar::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      right: -4px;
+      width: 100%;
+      height: 100%;
+      border: 1px solid #4ade8033;
+    }
+
+    .instrucciones {
+      font-size: 11px;
+      color: #475569;
+      line-height: 1.8;
+      letter-spacing: 0.05em;
+      max-width: 280px;
+    }
+
+    #error-msg {
+      display: none;
+      font-size: 11px;
+      color: #f87171;
+      letter-spacing: 0.08em;
+      padding: 16px;
+      border: 1px solid #f8717133;
+      max-width: 280px;
+      line-height: 1.7;
+      text-align: center;
+    }
+
+    /* --- CANVAS AR --- */
+    #canvas-ar {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+    }
+
+    /* --- HUD (overlay sobre la cámara) --- */
+    #hud {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* retícula central */
+    #reticle-hud {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 44px; height: 44px;
+    }
+    #reticle-hud .h-line {
+      position: absolute;
+      top: 50%; left: 0;
+      width: 100%; height: 1px;
+      background: #4ade80;
+      opacity: 0.6;
+    }
+    #reticle-hud .v-line {
+      position: absolute;
+      top: 0; left: 50%;
+      width: 1px; height: 100%;
+      background: #4ade80;
+      opacity: 0.6;
+    }
+    #reticle-hud .dot {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 5px; height: 5px;
+      background: #4ade80;
+      border-radius: 50%;
+    }
+
+    /* estado en la parte superior */
+    #estado {
+      position: absolute;
+      top: 24px; left: 0; right: 0;
+      text-align: center;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #4ade80;
+      text-shadow: 0 0 12px #4ade8088;
+      padding: 8px;
+    }
+
+    /* instruccion en la parte inferior */
+    #instruccion-ar {
+      position: absolute;
+      bottom: 48px; left: 0; right: 0;
+      text-align: center;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      color: #e8f0fe;
+      padding: 12px 24px;
+    }
+
+    /* boton salir — tiene pointer-events */
+    #btn-salir {
+      pointer-events: all;
+      position: absolute;
+      top: 20px; right: 20px;
+      background: transparent;
+      border: 1px solid #f8717166;
+      color: #f87171;
+      font-family: 'Courier New', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 8px 14px;
+      cursor: pointer;
+    }
+
+    /* etiqueta de datos de la caja colocada */
+    #label-caja {
+      display: none;
+      position: absolute;
+      bottom: 120px; left: 0; right: 0;
+      text-align: center;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: #a3e6c0;
+      line-height: 2;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PANTALLA INICIAL -->
+  <div id="start-screen">
+    <div class="logo-box">
+      <svg viewBox="0 0 24 24" stroke-width="1.5">
+        <path d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25"/>
+      </svg>
+    </div>
+    <div>
+      <h1>Parcela AR</h1>
+      <div class="subtitle" style="margin-top:6px">Visualizador volumétrico</div>
+    </div>
+    <div class="instrucciones">
+      Apuntá la cámara al suelo y movela lentamente hasta que aparezca el cursor verde.<br><br>
+      Tocá la pantalla para anclar el volumen edificable.
+    </div>
+    <button id="btn-ar">Iniciar realidad aumentada</button>
+    <div id="error-msg"></div>
+  </div>
+
+  <!-- CANVAS donde Three.js renderiza el 3D -->
+  <canvas id="canvas-ar"></canvas>
+
+  <!-- HUD sobre la cámara -->
+  <div id="hud">
+    <div id="estado">Buscando superficie...</div>
+    <div id="reticle-hud">
+      <div class="h-line"></div>
+      <div class="v-line"></div>
+      <div class="dot"></div>
+    </div>
+    <div id="instruccion-ar">Apuntá al suelo y mové el celular lentamente</div>
+    <div id="label-caja">
+      <div>ALTURA MÁX · <span id="lbl-altura">—</span></div>
+      <div>SUPERFICIE · <span id="lbl-sup">—</span></div>
+    </div>
+    <button id="btn-salir" onclick="salirAR()">✕ Salir</button>
+  </div>
+
+  <!-- Three.js desde CDN -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+
+    // ─── DATOS DE LA PARCELA ───────────────────────────────────────────────────
+    // Por ahora son valores fijos de ejemplo.
+    // En el paso siguiente los vamos a leer desde sessionStorage (pasados desde el frontend real).
+    const PARCELA = {
+      altura_max_m: 15,       // metros de altura máxima permitida
+      superficie_m2: 443,     // m² del terreno
+      fot: 3.46,
+      direccion: 'Demo · Caballito'
+    };
+
+    // Aproximación del lado del terreno (raíz cuadrada de la superficie, como si fuera cuadrado)
+    // En el paso final usaremos frente y fondo reales de la API.
+    const LADO_M = Math.sqrt(PARCELA.superficie_m2); // ≈ 21 m
+
+    // ─── REFERENCIAS AL DOM ────────────────────────────────────────────────────
+    const btnAR        = document.getElementById('btn-ar');
+    const startScreen  = document.getElementById('start-screen');
+    const canvasAR     = document.getElementById('canvas-ar');
+    const hud          = document.getElementById('hud');
+    const estadoEl     = document.getElementById('estado');
+    const instruccionEl= document.getElementById('instruccion-ar');
+    const labelCaja    = document.getElementById('label-caja');
+    const lblAltura    = document.getElementById('lbl-altura');
+    const lblSup       = document.getElementById('lbl-sup');
+
+    // ─── VARIABLES DE ESTADO ──────────────────────────────────────────────────
+    let renderer, scene, camera;
+    let xrSession = null;
+    let hitTestSource = null;
+    let hitTestSourceRequested = false;
+    let reticle;           // el cursor 3D que sigue el suelo
+    let cajaColocada = false;
+
+    // ─── VERIFICAR SOPORTE ────────────────────────────────────────────────────
+    async function verificarSoporte() {
+      if (!navigator.xr) {
+        mostrarError('Tu navegador no soporta WebXR. Usá Chrome en Android.');
+        return;
+      }
+      const soportado = await navigator.xr.isSessionSupported('immersive-ar');
+      if (!soportado) {
+        mostrarError('Tu dispositivo no soporta AR. Necesitás Android con ARCore y Chrome.');
+        return;
+      }
+      btnAR.disabled = false;
+    }
+
+    function mostrarError(msg) {
+      const el = document.getElementById('error-msg');
+      el.textContent = msg;
+      el.style.display = 'block';
+      btnAR.disabled = true;
+    }
+
+    // ─── INICIAR THREE.JS ─────────────────────────────────────────────────────
+    function initThree() {
+      // Renderer con soporte XR
+      renderer = new THREE.WebGLRenderer({
+        canvas: canvasAR,
+        antialias: true,
+        alpha: true   // fondo transparente para que se vea la cámara
+      });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.xr.enabled = true;
+
+      // Escena y cámara
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 200);
+
+      // Luz ambiental suave + luz direccional para que la caja tenga sombra
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+      scene.add(ambientLight);
+      const dirLight = new THREE.DirectionalLight(0x4ade80, 0.8);
+      dirLight.position.set(1, 2, 1);
+      scene.add(dirLight);
+
+      // ── Reticle (cursor de suelo) ──
+      // Un anillo plano que se mueve siguiendo el hit-test
+      const reticleGeom = new THREE.RingGeometry(0.1, 0.13, 32);
+      reticleGeom.rotateX(-Math.PI / 2); // acostarlo horizontal
+      const reticleMat = new THREE.MeshBasicMaterial({
+        color: 0x4ade80,
+        transparent: true,
+        opacity: 0.85,
+        side: THREE.DoubleSide
+      });
+      reticle = new THREE.Mesh(reticleGeom, reticleMat);
+      reticle.visible = false;
+      scene.add(reticle);
+    }
+
+    // ─── CREAR LA CAJA DEL VOLUMEN ────────────────────────────────────────────
+    // Escala: WebXR trabaja en metros reales. 1 unidad = 1 metro.
+    function crearCajaVolumen(posicion) {
+      const anchoM  = LADO_M;        // frente del lote en metros
+      const fondoM  = LADO_M;        // fondo del lote en metros
+      const alturaM = PARCELA.altura_max_m;
+
+      // Geometría sólida (semitransparente)
+      const geomSolida = new THREE.BoxGeometry(anchoM, alturaM, fondoM);
+      const matSolida = new THREE.MeshStandardMaterial({
+        color: 0x4ade80,
+        transparent: true,
+        opacity: 0.18,
+        side: THREE.DoubleSide
+      });
+      const cajaSolida = new THREE.Mesh(geomSolida, matSolida);
+
+      // Aristas (wireframe para ver la forma claramente)
+      const geomEdges = new THREE.EdgesGeometry(geomSolida);
+      const matEdges = new THREE.LineBasicMaterial({ color: 0x4ade80, linewidth: 1 });
+      const aristas = new THREE.LineSegments(geomEdges, matEdges);
+
+      // Grupo que contiene sólido + aristas
+      const grupo = new THREE.Group();
+      grupo.add(cajaSolida);
+      grupo.add(aristas);
+
+      // La caja crece desde el suelo hacia arriba
+      // En Three.js el origen de un BoxGeometry está en el centro,
+      // así que desplazamos Y en la mitad de la altura
+      grupo.position.copy(posicion);
+      grupo.position.y += alturaM / 2;
+
+      scene.add(grupo);
+
+      // Mostrar etiquetas en el HUD
+      lblAltura.textContent = `${PARCELA.altura_max_m} m`;
+      lblSup.textContent    = `${PARCELA.superficie_m2} m²`;
+      labelCaja.style.display = 'block';
+
+      return grupo;
+    }
+
+    // ─── INICIAR SESIÓN AR ────────────────────────────────────────────────────
+    async function iniciarAR() {
+      initThree();
+
+      try {
+        xrSession = await navigator.xr.requestSession('immersive-ar', {
+          requiredFeatures: ['hit-test'],
+          optionalFeatures: ['dom-overlay'],
+          domOverlay: { root: hud }
+        });
+      } catch (e) {
+        mostrarError('No se pudo iniciar AR: ' + e.message);
+        return;
+      }
+
+      renderer.xr.setReferenceSpaceType('local');
+      await renderer.xr.setSession(xrSession);
+
+      // Mostrar canvas y HUD, ocultar pantalla inicial
+      startScreen.style.display = 'none';
+      canvasAR.style.display    = 'block';
+      hud.style.display         = 'block';
+
+      // Loop de render
+      renderer.setAnimationLoop(onXRFrame);
+
+      xrSession.addEventListener('end', onSessionEnd);
+    }
+
+    // ─── LOOP PRINCIPAL ───────────────────────────────────────────────────────
+    function onXRFrame(timestamp, frame) {
+      if (!frame) return;
+
+      const refSpace = renderer.xr.getReferenceSpace();
+      const session  = renderer.xr.getSession();
+
+      // Pedir hit-test source la primera vez
+      if (!hitTestSourceRequested) {
+        session.requestReferenceSpace('viewer').then(viewerSpace => {
+          session.requestHitTestSource({ space: viewerSpace }).then(source => {
+            hitTestSource = source;
+          });
+        });
+        hitTestSourceRequested = true;
+      }
+
+      // Actualizar posición del reticle según donde apunta la cámara
+      if (hitTestSource) {
+        const resultados = frame.getHitTestResults(hitTestSource);
+        if (resultados.length > 0) {
+          const hit   = resultados[0];
+          const pose  = hit.getPose(refSpace);
+          const m     = pose.transform.matrix;
+
+          reticle.visible = true;
+          reticle.matrix.fromArray(m);
+          reticle.matrix.decompose(reticle.position, reticle.quaternion, reticle.scale);
+
+          // Superficie detectada
+          estadoEl.textContent    = 'Superficie detectada · tocá para anclar';
+          instruccionEl.textContent = cajaColocada
+            ? 'Tocá para reubicar el volumen'
+            : 'Tocá para colocar el volumen edificable';
+
+        } else {
+          reticle.visible = false;
+          estadoEl.textContent    = 'Buscando superficie...';
+          instruccionEl.textContent = 'Apuntá al suelo y mové el celular lentamente';
+        }
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    // ─── TOCAR LA PANTALLA → COLOCAR LA CAJA ─────────────────────────────────
+    function onSelect() {
+      if (!reticle.visible) return;
+
+      // Limpiar cajas anteriores (buscar grupos previos y removerlos)
+      const aEliminar = [];
+      scene.traverse(obj => {
+        if (obj.isGroup) aEliminar.push(obj);
+      });
+      aEliminar.forEach(obj => scene.remove(obj));
+
+      // Crear nueva caja donde está el reticle
+      crearCajaVolumen(reticle.position);
+      cajaColocada = true;
+    }
+
+    // ─── FIN DE SESIÓN ────────────────────────────────────────────────────────
+    function onSessionEnd() {
+      hitTestSource          = null;
+      hitTestSourceRequested = false;
+      cajaColocada           = false;
+      canvasAR.style.display = 'none';
+      hud.style.display      = 'none';
+      labelCaja.style.display= 'none';
+      startScreen.style.display = 'flex';
+      renderer.setAnimationLoop(null);
+    }
+
+    // ─── SALIR MANUALMENTE ────────────────────────────────────────────────────
+    window.salirAR = function() {
+      if (xrSession) xrSession.end();
+    };
+
+    // ─── EVENTOS ──────────────────────────────────────────────────────────────
+    btnAR.addEventListener('click', iniciarAR);
+
+    // El evento 'select' de WebXR se dispara cuando el usuario toca la pantalla en AR
+    // Lo enganchamos después de que la sesión arranca, dentro de iniciarAR
+    // (necesitamos acceso a xrSession)
+    const _iniciarAR = iniciarAR;
+    btnAR.addEventListener('click', async () => {
+      // Esperar a que xrSession esté asignado
+      await new Promise(r => setTimeout(r, 200));
+      if (xrSession) {
+        xrSession.addEventListener('select', onSelect);
+      }
+    });
+
+    // ─── AL CARGAR ────────────────────────────────────────────────────────────
+    verificarSoporte();
+
+  </script>
+
+</body>
+</html>
