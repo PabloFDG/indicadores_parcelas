@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AR · Parcela</title>
+
+  <!-- model-viewer para fallback iOS -->
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -19,49 +23,44 @@
       overflow: hidden;
     }
 
-    /* --- PANTALLA INICIAL --- */
+    /* ── PANTALLA INICIAL ── */
     #start-screen {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 32px;
+      gap: 28px;
       padding: 40px 24px;
       text-align: center;
     }
 
     .logo-box {
-      width: 72px;
-      height: 72px;
+      width: 72px; height: 72px;
       border: 2px solid #4ade80;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       position: relative;
     }
     .logo-box::before {
       content: '';
       position: absolute;
-      width: 40px;
-      height: 40px;
+      width: 40px; height: 40px;
       border: 1px solid #4ade8066;
       transform: rotate(45deg);
     }
     .logo-box svg { width: 32px; height: 32px; stroke: #4ade80; fill: none; }
 
-    h1 {
-      font-size: 13px;
-      letter-spacing: 0.25em;
-      text-transform: uppercase;
-      color: #4ade80;
-      font-weight: normal;
-    }
+    h1 { font-size: 13px; letter-spacing: 0.25em; text-transform: uppercase; color: #4ade80; font-weight: normal; }
+    .subtitle { font-size: 11px; letter-spacing: 0.15em; color: #64748b; text-transform: uppercase; margin-top: 6px; }
 
-    .subtitle {
+    .info-parcela {
       font-size: 11px;
-      letter-spacing: 0.15em;
-      color: #64748b;
-      text-transform: uppercase;
+      color: #94a3b8;
+      letter-spacing: 0.08em;
+      line-height: 2;
+      border: 1px solid #1e293b;
+      padding: 16px 24px;
+      min-width: 260px;
     }
+    .info-parcela span { color: #4ade80; }
 
     #btn-ar {
       background: transparent;
@@ -75,144 +74,137 @@
       cursor: pointer;
       position: relative;
       transition: all 0.2s;
+      touch-action: manipulation;
     }
-    #btn-ar:hover { background: #4ade8011; }
-    #btn-ar:disabled {
-      border-color: #334155;
-      color: #334155;
-      cursor: not-allowed;
-    }
+    #btn-ar:hover, #btn-ar:active { background: #4ade8011; }
+    #btn-ar:disabled { border-color: #334155; color: #334155; cursor: not-allowed; }
     #btn-ar::after {
       content: '';
       position: absolute;
-      bottom: -4px;
-      right: -4px;
-      width: 100%;
-      height: 100%;
+      bottom: -4px; right: -4px;
+      width: 100%; height: 100%;
       border: 1px solid #4ade8033;
     }
 
-    .instrucciones {
-      font-size: 11px;
-      color: #475569;
-      line-height: 1.8;
-      letter-spacing: 0.05em;
-      max-width: 280px;
-    }
+    .instrucciones { font-size: 11px; color: #475569; line-height: 1.8; letter-spacing: 0.05em; max-width: 280px; }
 
     #error-msg {
       display: none;
-      font-size: 11px;
-      color: #f87171;
+      font-size: 11px; color: #f87171;
       letter-spacing: 0.08em;
-      padding: 16px;
-      border: 1px solid #f8717133;
-      max-width: 280px;
-      line-height: 1.7;
-      text-align: center;
+      padding: 16px; border: 1px solid #f8717133;
+      max-width: 280px; line-height: 1.7; text-align: center;
     }
 
-    /* --- CANVAS AR --- */
+    /* ── CANVAS AR ── */
     #canvas-ar {
       display: none;
-      position: fixed;
-      top: 0; left: 0;
+      position: fixed; top: 0; left: 0;
       width: 100%; height: 100%;
+      touch-action: none;
     }
 
-    /* --- HUD (overlay sobre la cámara) --- */
+    /* ── HUD ── */
     #hud {
       display: none;
-      position: fixed;
-      top: 0; left: 0;
+      position: fixed; top: 0; left: 0;
       width: 100%; height: 100%;
       pointer-events: none;
       z-index: 10;
     }
 
-    /* retícula central */
-    #reticle-hud {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      width: 44px; height: 44px;
-    }
-    #reticle-hud .h-line {
-      position: absolute;
-      top: 50%; left: 0;
-      width: 100%; height: 1px;
-      background: #4ade80;
-      opacity: 0.6;
-    }
-    #reticle-hud .v-line {
-      position: absolute;
-      top: 0; left: 50%;
-      width: 1px; height: 100%;
-      background: #4ade80;
-      opacity: 0.6;
-    }
-    #reticle-hud .dot {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      width: 5px; height: 5px;
-      background: #4ade80;
-      border-radius: 50%;
-    }
-
-    /* estado en la parte superior */
     #estado {
-      position: absolute;
-      top: 24px; left: 0; right: 0;
+      position: absolute; top: 24px; left: 0; right: 0;
       text-align: center;
-      font-family: 'Courier New', monospace;
-      font-size: 11px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
+      font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
       color: #4ade80;
       text-shadow: 0 0 12px #4ade8088;
       padding: 8px;
     }
 
-    /* instruccion en la parte inferior */
+    /* reticle HUD (solo visual decorativo, el real es 3D) */
+    #reticle-hud {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 44px; height: 44px;
+      transition: opacity 0.3s;
+    }
+    #reticle-hud .h { position: absolute; top: 50%; left: 0; width: 100%; height: 1px; background: #4ade80; opacity: 0.5; }
+    #reticle-hud .v { position: absolute; top: 0; left: 50%; width: 1px; height: 100%; background: #4ade80; opacity: 0.5; }
+    #reticle-hud .d { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 5px; height: 5px; background: #4ade80; border-radius: 50%; }
+
     #instruccion-ar {
-      position: absolute;
-      bottom: 48px; left: 0; right: 0;
+      position: absolute; bottom: 140px; left: 0; right: 0;
       text-align: center;
-      font-family: 'Courier New', monospace;
-      font-size: 12px;
-      letter-spacing: 0.12em;
-      color: #e8f0fe;
-      padding: 12px 24px;
+      font-size: 12px; letter-spacing: 0.1em;
+      color: #e8f0fe; padding: 0 24px; line-height: 1.7;
     }
 
-    /* boton salir — tiene pointer-events */
+    /* panel de datos inferior */
+    #panel-datos {
+      display: none;
+      position: absolute; bottom: 48px; left: 16px; right: 16px;
+      background: #0a0f1acc;
+      border: 1px solid #1e293b;
+      padding: 14px 20px;
+      font-size: 10px; letter-spacing: 0.12em;
+      line-height: 2.2;
+      backdrop-filter: blur(8px);
+    }
+    #panel-datos .fila { display: flex; justify-content: space-between; }
+    #panel-datos .lbl { color: #64748b; text-transform: uppercase; }
+    #panel-datos .val { color: #4ade80; }
+
+    /* gestos hint */
+    #hint-gestos {
+      display: none;
+      position: absolute; top: 60px; left: 0; right: 0;
+      text-align: center;
+      font-size: 10px; letter-spacing: 0.1em;
+      color: #475569; padding: 0 24px;
+      line-height: 1.8;
+    }
+
+    /* botones con pointer-events */
     #btn-salir {
       pointer-events: all;
-      position: absolute;
-      top: 20px; right: 20px;
+      position: absolute; top: 20px; right: 20px;
       background: transparent;
       border: 1px solid #f8717166;
       color: #f87171;
       font-family: 'Courier New', monospace;
-      font-size: 10px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      padding: 8px 14px;
-      cursor: pointer;
+      font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+      padding: 8px 14px; cursor: pointer;
+      touch-action: manipulation;
     }
 
-    /* etiqueta de datos de la caja colocada */
-    #label-caja {
-      display: none;
-      position: absolute;
-      bottom: 120px; left: 0; right: 0;
-      text-align: center;
+    #btn-resetear {
+      pointer-events: all;
+      position: absolute; top: 20px; left: 20px;
+      background: transparent;
+      border: 1px solid #4ade8066;
+      color: #4ade80;
       font-family: 'Courier New', monospace;
-      font-size: 11px;
-      letter-spacing: 0.1em;
-      color: #a3e6c0;
-      line-height: 2;
+      font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+      padding: 8px 14px; cursor: pointer;
+      touch-action: manipulation;
+      display: none;
+    }
+
+    /* ── FALLBACK iOS (model-viewer) ── */
+    #ios-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      padding: 40px 24px;
+      text-align: center;
+    }
+    #ios-screen p { font-size: 11px; color: #94a3b8; line-height: 1.8; max-width: 280px; letter-spacing: 0.05em; }
+    model-viewer {
+      width: 100%;
+      height: 340px;
+      background: transparent;
     }
   </style>
 </head>
@@ -227,36 +219,68 @@
     </div>
     <div>
       <h1>Parcela AR</h1>
-      <div class="subtitle" style="margin-top:6px">Visualizador volumétrico</div>
+      <div class="subtitle">Visualizador volumétrico</div>
     </div>
+
+    <div class="info-parcela">
+      <div>DIRECCIÓN &nbsp;<span id="lbl-dir">—</span></div>
+      <div>ALTURA MÁX &nbsp;<span id="lbl-alt">—</span></div>
+      <div>SUPERFICIE &nbsp;<span id="lbl-sup">—</span></div>
+      <div>FOT &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="lbl-fot">—</span></div>
+    </div>
+
     <div class="instrucciones">
-      Apuntá la cámara al suelo y movela lentamente hasta que aparezca el cursor verde.<br><br>
-      Tocá la pantalla para anclar el volumen edificable.
+      Apuntá la cámara al suelo frente a la parcela y mové el celular lentamente.<br><br>
+      Tocá para anclar el volumen. Arrastrá con un dedo para moverlo. Rotá con dos dedos.
     </div>
+
     <button id="btn-ar">Iniciar realidad aumentada</button>
     <div id="error-msg"></div>
   </div>
 
-  <!-- CANVAS donde Three.js renderiza el 3D -->
+  <!-- FALLBACK iOS -->
+  <div id="ios-screen">
+    <div>
+      <h1>Parcela AR</h1>
+      <div class="subtitle">Modo iOS · model-viewer</div>
+    </div>
+    <p>Tocá el ícono AR en la esquina del visor para ver el volumen en tu espacio real. Podés moverlo y rotarlo con los dedos.</p>
+    <model-viewer
+      id="mv"
+      ar
+      ar-modes="quick-look"
+      camera-controls
+      shadow-intensity="0"
+      style="--poster-color: transparent">
+    </model-viewer>
+    <p style="color:#475569">Si no ves el botón AR, tu dispositivo no soporta QuickLook.</p>
+  </div>
+
+  <!-- CANVAS WebXR -->
   <canvas id="canvas-ar"></canvas>
 
-  <!-- HUD sobre la cámara -->
+  <!-- HUD -->
   <div id="hud">
     <div id="estado">Buscando superficie...</div>
+    <div id="hint-gestos">
+      ① Tocá para anclar &nbsp;·&nbsp; ② Un dedo = mover &nbsp;·&nbsp; ③ Dos dedos = rotar
+    </div>
     <div id="reticle-hud">
-      <div class="h-line"></div>
-      <div class="v-line"></div>
-      <div class="dot"></div>
+      <div class="h"></div>
+      <div class="v"></div>
+      <div class="d"></div>
     </div>
     <div id="instruccion-ar">Apuntá al suelo y mové el celular lentamente</div>
-    <div id="label-caja">
-      <div>ALTURA MÁX · <span id="lbl-altura">—</span></div>
-      <div>SUPERFICIE · <span id="lbl-sup">—</span></div>
+    <div id="panel-datos">
+      <div class="fila"><span class="lbl">Altura máx</span><span class="val" id="pd-alt">—</span></div>
+      <div class="fila"><span class="lbl">Superficie</span><span class="val" id="pd-sup">—</span></div>
+      <div class="fila"><span class="lbl">FOT</span><span class="val" id="pd-fot">—</span></div>
+      <div class="fila"><span class="lbl">Parcela</span><span class="val" id="pd-dir">—</span></div>
     </div>
+    <button id="btn-resetear" onclick="resetearCaja()">↺ Reubicar</button>
     <button id="btn-salir" onclick="salirAR()">✕ Salir</button>
   </div>
 
-  <!-- Three.js desde CDN -->
   <script type="importmap">
     {
       "imports": {
@@ -269,47 +293,95 @@
   <script type="module">
     import * as THREE from 'three';
 
-    // ─── DATOS DE LA PARCELA ───────────────────────────────────────────────────
-    // Por ahora son valores fijos de ejemplo.
-    // En el paso siguiente los vamos a leer desde sessionStorage (pasados desde el frontend real).
-    const PARCELA = {
-      altura_max_m: 3,       // metros de altura máxima permitida
-      superficie_m2: 9,     // m² del terreno
+    // ── DATOS DE LA PARCELA ──────────────────────────────────────────────────
+    // Se leen desde sessionStorage (pasados desde el frontend principal).
+    // Si no hay datos, se usan valores de demo para pruebas en interior.
+    let PARCELA = {
+      altura_max_m: 3,
+      superficie_m2: 9,
+      frente_m: 3,
+      fondo_m: 3,
       fot: 3.46,
       direccion: 'Demo · interior'
     };
 
-    // Aproximación del lado del terreno (raíz cuadrada de la superficie, como si fuera cuadrado)
-    // En el paso final usaremos frente y fondo reales de la API.
-    const LADO_M = Math.sqrt(PARCELA.superficie_m2); // ≈ 21 m
+    try {
+      const stored = sessionStorage.getItem('parcela_ar');
+      if (stored) {
+        const d = JSON.parse(stored);
+        PARCELA = {
+          altura_max_m : d.altura_maxima_m       || 15,
+          superficie_m2: d.superficie_terreno_m2  || 443,
+          frente_m     : d.frente_m               || Math.sqrt(d.superficie_terreno_m2 || 443),
+          fondo_m      : d.fondo_m                || Math.sqrt(d.superficie_terreno_m2 || 443),
+          fot          : d.fot                    || '—',
+          direccion    : d.direccion              || '—'
+        };
+      }
+    } catch(e) {}
 
-    // ─── REFERENCIAS AL DOM ────────────────────────────────────────────────────
-    const btnAR        = document.getElementById('btn-ar');
-    const startScreen  = document.getElementById('start-screen');
-    const canvasAR     = document.getElementById('canvas-ar');
-    const hud          = document.getElementById('hud');
-    const estadoEl     = document.getElementById('estado');
-    const instruccionEl= document.getElementById('instruccion-ar');
-    const labelCaja    = document.getElementById('label-caja');
-    const lblAltura    = document.getElementById('lbl-altura');
-    const lblSup       = document.getElementById('lbl-sup');
+    // ── POBLAR UI ─────────────────────────────────────────────────────────────
+    const fmt = v => typeof v === 'number' ? v.toLocaleString('es-AR', {maximumFractionDigits:1}) : v;
+    document.getElementById('lbl-dir').textContent = PARCELA.direccion;
+    document.getElementById('lbl-alt').textContent = `${fmt(PARCELA.altura_max_m)} m`;
+    document.getElementById('lbl-sup').textContent = `${fmt(PARCELA.superficie_m2)} m²`;
+    document.getElementById('lbl-fot').textContent = fmt(PARCELA.fot);
+    document.getElementById('pd-alt').textContent  = `${fmt(PARCELA.altura_max_m)} m`;
+    document.getElementById('pd-sup').textContent  = `${fmt(PARCELA.superficie_m2)} m²`;
+    document.getElementById('pd-fot').textContent  = fmt(PARCELA.fot);
+    document.getElementById('pd-dir').textContent  = PARCELA.direccion;
 
-    // ─── VARIABLES DE ESTADO ──────────────────────────────────────────────────
+    // ── DETECCIÓN DE PLATAFORMA ───────────────────────────────────────────────
+    const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+    // ── REFERENCIAS DOM ───────────────────────────────────────────────────────
+    const btnAR       = document.getElementById('btn-ar');
+    const startScreen = document.getElementById('start-screen');
+    const iosScreen   = document.getElementById('ios-screen');
+    const canvasAR    = document.getElementById('canvas-ar');
+    const hud         = document.getElementById('hud');
+    const estadoEl    = document.getElementById('estado');
+    const instrEl     = document.getElementById('instruccion-ar');
+    const panelDatos  = document.getElementById('panel-datos');
+    const hintGestos  = document.getElementById('hint-gestos');
+    const btnResetear = document.getElementById('btn-resetear');
+
+    // ── VARIABLES WEBXR ───────────────────────────────────────────────────────
     let renderer, scene, camera;
     let xrSession = null;
     let hitTestSource = null;
     let hitTestSourceRequested = false;
-    let reticle;           // el cursor 3D que sigue el suelo
-    let cajaColocada = false;
+    let reticle;
+    let grupoCaja = null;     // la caja actual en escena
 
-    // ─── VERIFICAR SOPORTE ────────────────────────────────────────────────────
+    // ── VARIABLES DE GESTOS ───────────────────────────────────────────────────
+    let cajaColocada  = false;
+    let arrastrando   = false;
+    let rotando       = false;
+
+    // Para arrastre con 1 dedo
+    let touchStartX   = 0;
+    let touchStartY   = 0;
+    let cajaStartPos  = new THREE.Vector3();
+
+    // Para rotación con 2 dedos
+    let anguloInicialDedos = 0;
+    let cajaRotacionInicial = 0;
+
+    // ── VERIFICAR SOPORTE ─────────────────────────────────────────────────────
     async function verificarSoporte() {
+      if (esIOS) {
+        // iOS no soporta WebXR AR — usamos model-viewer
+        btnAR.textContent = 'Ver en AR (iOS)';
+        btnAR.disabled = false;
+        return;
+      }
       if (!navigator.xr) {
         mostrarError('Tu navegador no soporta WebXR. Usá Chrome en Android.');
         return;
       }
-      const soportado = await navigator.xr.isSessionSupported('immersive-ar');
-      if (!soportado) {
+      const ok = await navigator.xr.isSessionSupported('immersive-ar');
+      if (!ok) {
         mostrarError('Tu dispositivo no soporta AR. Necesitás Android con ARCore y Chrome.');
         return;
       }
@@ -323,98 +395,56 @@
       btnAR.disabled = true;
     }
 
-    // ─── INICIAR THREE.JS ─────────────────────────────────────────────────────
+    // ── FLUJO iOS (model-viewer) ──────────────────────────────────────────────
+    function iniciarIOS() {
+      // Generamos un GLTF mínimo en base64 que representa la caja de la parcela.
+      // model-viewer necesita un archivo .glb — lo generamos programáticamente.
+      const glb = generarGLB(PARCELA.frente_m, PARCELA.altura_max_m, PARCELA.fondo_m);
+      const blob = new Blob([glb], { type: 'model/gltf-binary' });
+      const url  = URL.createObjectURL(blob);
+
+      const mv = document.getElementById('mv');
+      mv.src = url;
+      mv.setAttribute('scale', '1 1 1'); // escala real
+
+      startScreen.style.display = 'none';
+      iosScreen.style.display   = 'flex';
+    }
+
+    // ── INICIAR AR ANDROID ────────────────────────────────────────────────────
     function initThree() {
-      // Renderer con soporte XR
-      renderer = new THREE.WebGLRenderer({
-        canvas: canvasAR,
-        antialias: true,
-        alpha: true   // fondo transparente para que se vea la cámara
-      });
+      renderer = new THREE.WebGLRenderer({ canvas: canvasAR, antialias: true, alpha: true });
       renderer.setPixelRatio(window.devicePixelRatio);
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.xr.enabled = true;
 
-      // Escena y cámara
-      scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 200);
+      scene  = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 300);
 
-      // Luz ambiental suave + luz direccional para que la caja tenga sombra
-      const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
-      scene.add(ambientLight);
-      const dirLight = new THREE.DirectionalLight(0x4ade80, 0.8);
-      dirLight.position.set(1, 2, 1);
-      scene.add(dirLight);
+      scene.add(new THREE.AmbientLight(0xffffff, 1.4));
+      const dir = new THREE.DirectionalLight(0x4ade80, 1.0);
+      dir.position.set(2, 4, 2);
+      scene.add(dir);
 
-      // ── Reticle (cursor de suelo) ──
-      // Un anillo plano que se mueve siguiendo el hit-test
-      const reticleGeom = new THREE.RingGeometry(0.1, 0.13, 32);
-      reticleGeom.rotateX(-Math.PI / 2); // acostarlo horizontal
-      const reticleMat = new THREE.MeshBasicMaterial({
-        color: 0x4ade80,
-        transparent: true,
-        opacity: 0.85,
-        side: THREE.DoubleSide
-      });
-      reticle = new THREE.Mesh(reticleGeom, reticleMat);
+      // Reticle 3D (anillo en el suelo)
+      const rg = new THREE.RingGeometry(0.12, 0.16, 36);
+      rg.rotateX(-Math.PI / 2);
+      reticle = new THREE.Mesh(rg, new THREE.MeshBasicMaterial({
+        color: 0x4ade80, transparent: true, opacity: 0.9, side: THREE.DoubleSide
+      }));
       reticle.visible = false;
       scene.add(reticle);
     }
 
-    // ─── CREAR LA CAJA DEL VOLUMEN ────────────────────────────────────────────
-    // Escala: WebXR trabaja en metros reales. 1 unidad = 1 metro.
-    function crearCajaVolumen(posicion) {
-      const anchoM  = LADO_M;        // frente del lote en metros
-      const fondoM  = LADO_M;        // fondo del lote en metros
-      const alturaM = PARCELA.altura_max_m;
-
-      // Geometría sólida (semitransparente)
-      const geomSolida = new THREE.BoxGeometry(anchoM, alturaM, fondoM);
-      const matSolida = new THREE.MeshStandardMaterial({
-        color: 0x4ade80,
-        transparent: true,
-        opacity: 0.18,
-        side: THREE.DoubleSide
-      });
-      const cajaSolida = new THREE.Mesh(geomSolida, matSolida);
-
-      // Aristas (wireframe para ver la forma claramente)
-      const geomEdges = new THREE.EdgesGeometry(geomSolida);
-      const matEdges = new THREE.LineBasicMaterial({ color: 0x4ade80, linewidth: 1 });
-      const aristas = new THREE.LineSegments(geomEdges, matEdges);
-
-      // Grupo que contiene sólido + aristas
-      const grupo = new THREE.Group();
-      grupo.add(cajaSolida);
-      grupo.add(aristas);
-
-      // La caja crece desde el suelo hacia arriba
-      // En Three.js el origen de un BoxGeometry está en el centro,
-      // así que desplazamos Y en la mitad de la altura
-      grupo.position.copy(posicion);
-      grupo.position.y += alturaM / 2;
-
-      scene.add(grupo);
-
-      // Mostrar etiquetas en el HUD
-      lblAltura.textContent = `${PARCELA.altura_max_m} m`;
-      lblSup.textContent    = `${PARCELA.superficie_m2} m²`;
-      labelCaja.style.display = 'block';
-
-      return grupo;
-    }
-
-    // ─── INICIAR SESIÓN AR ────────────────────────────────────────────────────
     async function iniciarAR() {
       initThree();
-
       try {
         xrSession = await navigator.xr.requestSession('immersive-ar', {
           requiredFeatures: ['hit-test'],
           optionalFeatures: ['dom-overlay'],
           domOverlay: { root: hud }
         });
-      } catch (e) {
+      } catch(e) {
         mostrarError('No se pudo iniciar AR: ' + e.message);
         return;
       }
@@ -422,104 +452,312 @@
       renderer.xr.setReferenceSpaceType('local');
       await renderer.xr.setSession(xrSession);
 
-      // Enganchamos select aquí, cuando xrSession ya existe con certeza
+      // ── Registrar eventos AQUÍ, cuando xrSession ya existe ──
       xrSession.addEventListener('select', onSelect);
       xrSession.addEventListener('end', onSessionEnd);
 
-      // Mostrar canvas y HUD, ocultar pantalla inicial
       startScreen.style.display = 'none';
       canvasAR.style.display    = 'block';
       hud.style.display         = 'block';
+      hintGestos.style.display  = 'block';
 
-      // Loop de render
+      // Eventos de gestos táctiles sobre el canvas
+      canvasAR.addEventListener('touchstart',  onTouchStart,  { passive: false });
+      canvasAR.addEventListener('touchmove',   onTouchMove,   { passive: false });
+      canvasAR.addEventListener('touchend',    onTouchEnd,    { passive: false });
+
       renderer.setAnimationLoop(onXRFrame);
     }
 
-    // ─── LOOP PRINCIPAL ───────────────────────────────────────────────────────
+    // ── LOOP PRINCIPAL ────────────────────────────────────────────────────────
     function onXRFrame(timestamp, frame) {
       if (!frame) return;
-
       const refSpace = renderer.xr.getReferenceSpace();
       const session  = renderer.xr.getSession();
 
-      // Pedir hit-test source la primera vez
       if (!hitTestSourceRequested) {
-        session.requestReferenceSpace('viewer').then(viewerSpace => {
-          session.requestHitTestSource({ space: viewerSpace }).then(source => {
-            hitTestSource = source;
+        session.requestReferenceSpace('viewer').then(vs => {
+          session.requestHitTestSource({ space: vs }).then(src => {
+            hitTestSource = src;
           });
         });
         hitTestSourceRequested = true;
       }
 
-      // Actualizar posición del reticle según donde apunta la cámara
       if (hitTestSource) {
-        const resultados = frame.getHitTestResults(hitTestSource);
-        if (resultados.length > 0) {
-          const hit   = resultados[0];
-          const pose  = hit.getPose(refSpace);
-          const m     = pose.transform.matrix;
-
+        const hits = frame.getHitTestResults(hitTestSource);
+        if (hits.length > 0) {
+          const pose = hits[0].getPose(refSpace);
           reticle.visible = true;
-          reticle.matrix.fromArray(m);
+          reticle.matrix.fromArray(pose.transform.matrix);
           reticle.matrix.decompose(reticle.position, reticle.quaternion, reticle.scale);
 
-          // Superficie detectada
-          estadoEl.textContent    = 'Superficie detectada · tocá para anclar';
-          instruccionEl.textContent = cajaColocada
-            ? 'Tocá para reubicar el volumen'
-            : 'Tocá para colocar el volumen edificable';
-
+          estadoEl.textContent = cajaColocada
+            ? 'Volumen anclado · arrastrá para mover'
+            : 'Superficie detectada · tocá para anclar';
+          instrEl.textContent = cajaColocada
+            ? '1 dedo = mover · 2 dedos = rotar'
+            : 'Tocá en cualquier parte de la pantalla';
         } else {
           reticle.visible = false;
-          estadoEl.textContent    = 'Buscando superficie...';
-          instruccionEl.textContent = 'Apuntá al suelo y mové el celular lentamente';
+          estadoEl.textContent = 'Buscando superficie...';
+          instrEl.textContent  = 'Apuntá al suelo y mové el celular lentamente';
         }
       }
 
       renderer.render(scene, camera);
     }
 
-    // ─── TOCAR LA PANTALLA → COLOCAR LA CAJA ─────────────────────────────────
+    // ── PRIMER TOQUE → ANCLAR CAJA ────────────────────────────────────────────
     function onSelect() {
-      if (!reticle.visible) return;
-
-      // Limpiar cajas anteriores (buscar grupos previos y removerlos)
-      const aEliminar = [];
-      scene.traverse(obj => {
-        if (obj.isGroup) aEliminar.push(obj);
-      });
-      aEliminar.forEach(obj => scene.remove(obj));
-
-      // Crear nueva caja donde está el reticle
-      crearCajaVolumen(reticle.position);
+      if (!reticle.visible || cajaColocada) return;
+      grupoCaja = crearCaja(reticle.position.clone());
       cajaColocada = true;
+      panelDatos.style.display  = 'block';
+      btnResetear.style.display = 'block';
+      document.getElementById('reticle-hud').style.opacity = '0';
     }
 
-    // ─── FIN DE SESIÓN ────────────────────────────────────────────────────────
+    // ── CREAR CAJA ────────────────────────────────────────────────────────────
+    function crearCaja(pos) {
+      // Eliminar caja anterior si existe
+      if (grupoCaja) scene.remove(grupoCaja);
+
+      const w = PARCELA.frente_m;
+      const h = PARCELA.altura_max_m;
+      const d = PARCELA.fondo_m;
+
+      const geom = new THREE.BoxGeometry(w, h, d);
+
+      // Sólido semitransparente — más opaco que antes para verlo al sol
+      const solido = new THREE.Mesh(geom, new THREE.MeshStandardMaterial({
+        color: 0x4ade80,
+        transparent: true,
+        opacity: 0.35,        // antes era 0.18 — ahora más visible
+        side: THREE.DoubleSide,
+        depthWrite: false
+      }));
+
+      // Aristas bien visibles
+      const aristas = new THREE.LineSegments(
+        new THREE.EdgesGeometry(geom),
+        new THREE.LineBasicMaterial({ color: 0x4ade80, linewidth: 2 })
+      );
+
+      // Cara superior con color más marcado para dar sensación de techo
+      const geomTecho = new THREE.PlaneGeometry(w, d);
+      geomTecho.rotateX(-Math.PI / 2);
+      const techo = new THREE.Mesh(geomTecho, new THREE.MeshStandardMaterial({
+        color: 0x4ade80, transparent: true, opacity: 0.55, side: THREE.DoubleSide
+      }));
+      techo.position.y = h / 2;
+
+      const grupo = new THREE.Group();
+      grupo.add(solido);
+      grupo.add(aristas);
+      grupo.add(techo);
+
+      // Origen en la base (no en el centro)
+      grupo.position.copy(pos);
+      grupo.position.y += h / 2;
+
+      scene.add(grupo);
+      return grupo;
+    }
+
+    // ── RESETEAR POSICIÓN ─────────────────────────────────────────────────────
+    window.resetearCaja = function() {
+      cajaColocada = false;
+      if (grupoCaja) { scene.remove(grupoCaja); grupoCaja = null; }
+      panelDatos.style.display  = 'none';
+      btnResetear.style.display = 'none';
+      document.getElementById('reticle-hud').style.opacity = '1';
+      estadoEl.textContent = 'Buscando superficie...';
+      instrEl.textContent  = 'Apuntá al suelo y mové el celular lentamente';
+    };
+
+    // ── GESTOS TÁCTILES ───────────────────────────────────────────────────────
+
+    function getTouchAngle(t1, t2) {
+      return Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX);
+    }
+
+    function onTouchStart(e) {
+      e.preventDefault();
+      if (!cajaColocada || !grupoCaja) return;
+
+      if (e.touches.length === 1) {
+        arrastrando = true;
+        rotando     = false;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        cajaStartPos.copy(grupoCaja.position);
+
+      } else if (e.touches.length === 2) {
+        arrastrando = false;
+        rotando     = true;
+        anguloInicialDedos  = getTouchAngle(e.touches[0], e.touches[1]);
+        cajaRotacionInicial = grupoCaja.rotation.y;
+      }
+    }
+
+    function onTouchMove(e) {
+      e.preventDefault();
+      if (!cajaColocada || !grupoCaja) return;
+
+      if (arrastrando && e.touches.length === 1) {
+        // Convertir desplazamiento en píxeles a metros en el plano horizontal
+        // Factor de sensibilidad: ajustado para que 100px ≈ 1 metro
+        const dx = (e.touches[0].clientX - touchStartX) / 100;
+        const dz = (e.touches[0].clientY - touchStartY) / 100;
+
+        // Mover en el plano XZ (horizontal), respetando hacia dónde mira la cámara
+        const camDir = new THREE.Vector3();
+        camera.getWorldDirection(camDir);
+        camDir.y = 0;
+        camDir.normalize();
+
+        const derecha = new THREE.Vector3();
+        derecha.crossVectors(new THREE.Vector3(0, 1, 0), camDir).normalize();
+
+        const nuevaPos = cajaStartPos.clone()
+          .addScaledVector(derecha, -dx)
+          .addScaledVector(camDir,  -dz);
+
+        grupoCaja.position.set(nuevaPos.x, grupoCaja.position.y, nuevaPos.z);
+
+      } else if (rotando && e.touches.length === 2) {
+        const anguloActual = getTouchAngle(e.touches[0], e.touches[1]);
+        const delta = anguloActual - anguloInicialDedos;
+        grupoCaja.rotation.y = cajaRotacionInicial + delta;
+      }
+    }
+
+    function onTouchEnd(e) {
+      e.preventDefault();
+      arrastrando = false;
+      rotando     = false;
+    }
+
+    // ── FIN DE SESIÓN ─────────────────────────────────────────────────────────
     function onSessionEnd() {
       hitTestSource          = null;
       hitTestSourceRequested = false;
       cajaColocada           = false;
+      grupoCaja              = null;
       canvasAR.style.display = 'none';
       hud.style.display      = 'none';
-      labelCaja.style.display= 'none';
       startScreen.style.display = 'flex';
       renderer.setAnimationLoop(null);
     }
 
-    // ─── SALIR MANUALMENTE ────────────────────────────────────────────────────
-    window.salirAR = function() {
-      if (xrSession) xrSession.end();
-    };
+    window.salirAR = function() { if (xrSession) xrSession.end(); };
 
-    // ─── EVENTOS ──────────────────────────────────────────────────────────────
-    btnAR.addEventListener('click', iniciarAR);
+    // ── EVENTOS BOTÓN PRINCIPAL ───────────────────────────────────────────────
+    btnAR.addEventListener('click', () => {
+      if (esIOS) iniciarIOS();
+      else iniciarAR();
+    });
 
-    // ─── AL CARGAR ────────────────────────────────────────────────────────────
+    // ── GENERADOR GLB MÍNIMO PARA IOS ─────────────────────────────────────────
+    // Genera un archivo GLB (GLTF binario) con un BoxGeometry a medida.
+    // Necesario porque model-viewer no acepta geometría Three.js directamente.
+    function generarGLB(w, h, d) {
+      // Vértices de un cubo centrado en origen, escalado a w/h/d
+      const hw = w/2, hh = h/2, hd = d/2;
+      const verts = new Float32Array([
+        -hw,-hh,-hd,  hw,-hh,-hd,  hw, hh,-hd, -hw, hh,-hd,
+        -hw,-hh, hd,  hw,-hh, hd,  hw, hh, hd, -hw, hh, hd
+      ]);
+      const indices = new Uint16Array([
+        0,1,2, 2,3,0,  4,5,6, 6,7,4,
+        0,4,7, 7,3,0,  1,5,6, 6,2,1,
+        3,2,6, 6,7,3,  0,1,5, 5,4,0
+      ]);
+
+      const vertBuf  = verts.buffer;
+      const idxBuf   = indices.buffer;
+
+      const gltf = {
+        asset: { version: "2.0" },
+        scene: 0,
+        scenes: [{ nodes: [0] }],
+        nodes: [{ mesh: 0 }],
+        meshes: [{
+          primitives: [{
+            attributes: { POSITION: 0 },
+            indices: 1,
+            material: 0
+          }]
+        }],
+        materials: [{
+          pbrMetallicRoughness: {
+            baseColorFactor: [0.29, 0.87, 0.50, 0.5],
+            metallicFactor: 0,
+            roughnessFactor: 0.8
+          },
+          alphaMode: "BLEND",
+          doubleSided: true
+        }],
+        accessors: [
+          {
+            bufferView: 0, componentType: 5126, count: 8,
+            type: "VEC3",
+            min: [-hw,-hh,-hd], max: [hw,hh,hd]
+          },
+          {
+            bufferView: 1, componentType: 5123, count: indices.length, type: "SCALAR"
+          }
+        ],
+        bufferViews: [
+          { buffer: 0, byteOffset: 0,              byteLength: vertBuf.byteLength },
+          { buffer: 0, byteOffset: vertBuf.byteLength, byteLength: idxBuf.byteLength }
+        ],
+        buffers: [{
+          byteLength: vertBuf.byteLength + idxBuf.byteLength
+        }]
+      };
+
+      const jsonStr  = JSON.stringify(gltf);
+      const jsonBuf  = new TextEncoder().encode(jsonStr);
+      // padding a múltiplo de 4
+      const jsonPad  = (4 - jsonBuf.length % 4) % 4;
+      const jsonLen  = jsonBuf.length + jsonPad;
+
+      const binData  = new Uint8Array(vertBuf.byteLength + idxBuf.byteLength);
+      binData.set(new Uint8Array(vertBuf), 0);
+      binData.set(new Uint8Array(idxBuf),  vertBuf.byteLength);
+      const binPad   = (4 - binData.length % 4) % 4;
+      const binLen   = binData.length + binPad;
+
+      const totalLen = 12 + 8 + jsonLen + 8 + binLen;
+      const out      = new ArrayBuffer(totalLen);
+      const dv       = new DataView(out);
+      let off        = 0;
+
+      // GLB header
+      dv.setUint32(off, 0x46546C67, true); off += 4; // magic
+      dv.setUint32(off, 2,          true); off += 4; // version
+      dv.setUint32(off, totalLen,   true); off += 4; // length
+
+      // Chunk 0: JSON
+      dv.setUint32(off, jsonLen,    true); off += 4;
+      dv.setUint32(off, 0x4E4F534A, true); off += 4; // JSON
+      new Uint8Array(out, off, jsonBuf.length).set(jsonBuf); off += jsonBuf.length;
+      for (let i = 0; i < jsonPad; i++) { dv.setUint8(off, 0x20); off++; }
+
+      // Chunk 1: BIN
+      dv.setUint32(off, binLen,     true); off += 4;
+      dv.setUint32(off, 0x004E4942, true); off += 4; // BIN
+      new Uint8Array(out, off, binData.length).set(binData); off += binData.length;
+      for (let i = 0; i < binPad; i++) { dv.setUint8(off, 0); off++; }
+
+      return out;
+    }
+
+    // ── ARRANCAR ──────────────────────────────────────────────────────────────
     verificarSoporte();
 
   </script>
-
 </body>
 </html>
