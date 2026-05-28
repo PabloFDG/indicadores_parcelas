@@ -422,6 +422,10 @@
       renderer.xr.setReferenceSpaceType('local');
       await renderer.xr.setSession(xrSession);
 
+      // Enganchamos select aquí, cuando xrSession ya existe con certeza
+      xrSession.addEventListener('select', onSelect);
+      xrSession.addEventListener('end', onSessionEnd);
+
       // Mostrar canvas y HUD, ocultar pantalla inicial
       startScreen.style.display = 'none';
       canvasAR.style.display    = 'block';
@@ -429,8 +433,6 @@
 
       // Loop de render
       renderer.setAnimationLoop(onXRFrame);
-
-      xrSession.addEventListener('end', onSessionEnd);
     }
 
     // ─── LOOP PRINCIPAL ───────────────────────────────────────────────────────
@@ -513,18 +515,6 @@
 
     // ─── EVENTOS ──────────────────────────────────────────────────────────────
     btnAR.addEventListener('click', iniciarAR);
-
-    // El evento 'select' de WebXR se dispara cuando el usuario toca la pantalla en AR
-    // Lo enganchamos después de que la sesión arranca, dentro de iniciarAR
-    // (necesitamos acceso a xrSession)
-    const _iniciarAR = iniciarAR;
-    btnAR.addEventListener('click', async () => {
-      // Esperar a que xrSession esté asignado
-      await new Promise(r => setTimeout(r, 200));
-      if (xrSession) {
-        xrSession.addEventListener('select', onSelect);
-      }
-    });
 
     // ─── AL CARGAR ────────────────────────────────────────────────────────────
     verificarSoporte();
