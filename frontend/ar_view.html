@@ -297,10 +297,10 @@
     // Se leen desde sessionStorage (pasados desde el frontend principal).
     // Si no hay datos, se usan valores de demo para pruebas en interior.
     let PARCELA = {
-      altura_max_m: 3,
-      superficie_m2: 9,
-      frente_m: 3,
-      fondo_m: 3,
+      altura_max_m: 1,
+      superficie_m2: 1,
+      frente_m: 1,
+      fondo_m: 1,
       fot: 3.46,
       direccion: 'Demo · interior'
     };
@@ -359,13 +359,12 @@
     let arrastrando   = false;
     let rotando       = false;
 
-    // Para arrastre con 1 dedo
-    let touchStartX   = 0;
-    let touchStartY   = 0;
-    let cajaStartPos  = new THREE.Vector3();
+    // Arrastre 1 dedo: delta incremental (posición anterior del toque)
+    let prevTouchX    = 0;
+    let prevTouchY    = 0;
 
-    // Para rotación con 2 dedos
-    let anguloInicialDedos = 0;
+    // Rotación 2 dedos: X promedio anterior
+    let prevMidX      = 0;
     let cajaRotacionInicial = 0;
 
     // ── VERIFICAR SOPORTE ─────────────────────────────────────────────────────
@@ -577,10 +576,9 @@
     };
 
     // ── GESTOS TÁCTILES ───────────────────────────────────────────────────────
-
-    function getTouchAngle(t1, t2) {
-      return Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX);
-    }
+    // Lógica delta incremental: cada frame calcula cuánto SE MOVIÓ el dedo
+    // respecto al frame anterior, no respecto al inicio. Esto evita saltos
+    // cuando la cámara cambia de orientación entre touchstart y touchmove.
 
     function onTouchStart(e) {
       e.preventDefault();
@@ -589,14 +587,14 @@
       if (e.touches.length === 1) {
         arrastrando = true;
         rotando     = false;
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-        cajaStartPos.copy(grupoCaja.position);
+        prevTouchX  = e.touches[0].clientX;
+        prevTouchY  = e.touches[0].clientY;
 
-      } else if (e.touches.length === 2) {
+      } else if (e.touches.length >= 2) {
         arrastrando = false;
         rotando     = true;
-        anguloInicialDedos  = getTouchAngle(e.touches[0], e.touches[1]);
+        // X promedio entre los dos dedos como referencia de rotación
+        prevMidX    = (e.touches[0].clientX + e.touches[1].clientX) / 2;
         cajaRotacionInicial = grupoCaja.rotation.y;
       }
     }
@@ -606,30 +604,40 @@
       if (!cajaColocada || !grupoCaja) return;
 
       if (arrastrando && e.touches.length === 1) {
-        // Convertir desplazamiento en píxeles a metros en el plano horizontal
-        // Factor de sensibilidad: ajustado para que 100px ≈ 1 metro
-        const dx = (e.touches[0].clientX - touchStartX) / 100;
-        const dz = (e.touches[0].clientY - touchStartY) / 100;
+        // Delta en píxeles respecto al frame anterior
+        const deltaX = e.touches[0].clientX - prevTouchX;
+        const deltaY = e.touches[0].clientY - prevTouchY;
 
-        // Mover en el plano XZ (horizontal), respetando hacia dónde mira la cámara
+        // Convertir píxeles a metros: 80px ≈ 1 metro (ajustable)
+        const SENS = 80;
+
+        // Dirección de la cámara en el plano horizontal
         const camDir = new THREE.Vector3();
         camera.getWorldDirection(camDir);
         camDir.y = 0;
         camDir.normalize();
 
-        const derecha = new THREE.Vector3();
-        derecha.crossVectors(new THREE.Vector3(0, 1, 0), camDir).normalize();
+        // Vector derecha perpendicular a camDir
+        const derecha = new THREE.Vector3(-camDir.z, 0, camDir.x);
 
-        const nuevaPos = cajaStartPos.clone()
-          .addScaledVector(derecha, -dx)
-          .addScaledVector(camDir,  -dz);
+        // Aplicar delta incremental sobre la posición actual
+        grupoCaja.position.addScaledVector(derecha,  deltaX / SENS);
+        grupoCaja.position.addScaledVector(camDir,  -deltaY / SENS);
 
-        grupoCaja.position.set(nuevaPos.x, grupoCaja.position.y, nuevaPos.z);
+        // Actualizar referencia para el próximo frame
+        prevTouchX = e.touches[0].clientX;
+        prevTouchY = e.touches[0].clientY;
 
-      } else if (rotando && e.touches.length === 2) {
-        const anguloActual = getTouchAngle(e.touches[0], e.touches[1]);
-        const delta = anguloActual - anguloInicialDedos;
-        grupoCaja.rotation.y = cajaRotacionInicial + delta;
+      } else if (rotando && e.touches.length >= 2) {
+        // X promedio actual entre los dos dedos
+        const midX  = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        // Delta horizontal → rotación Y
+        // 200px de deslizamiento = 1 vuelta completa (2π)
+        const delta = (midX - prevMidX) * (Math.PI / 200);
+        grupoCaja.rotation.y += delta;
+
+        // Actualizar referencia incremental
+        prevMidX = midX;
       }
     }
 
