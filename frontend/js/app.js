@@ -361,6 +361,27 @@ function descargarPDF() {
     doc.save(nombre);
 }
 
+// ── Ver en Realidad Aumentada ─────────────────────────────────────────────
+// Guarda los datos de la parcela en sessionStorage y abre ar_view.html
+function abrirAR() {
+    if (!datosActuales) return;
+    const d = datosActuales;
+
+    // Calcula frente y fondo: usa los datos reales si existen,
+    // si no aproxima como raíz cuadrada de la superficie (lote cuadrado)
+    const ladoAprox = Math.sqrt(d.superficie_terreno_m2 || 100);
+    const datos = {
+        altura_maxima_m:       d.altura_maxima_m       || 15,
+        superficie_terreno_m2: d.superficie_terreno_m2 || 100,
+        frente_m:              d.frente_m              || ladoAprox,
+        fondo_m:               d.fondo_m               || ladoAprox,
+        fot:                   d.fot                   || null,
+        direccion:             d.direccion             || "—"
+    };
+    sessionStorage.setItem("parcela_ar", JSON.stringify(datos));
+    window.open("ar_view.html", "_blank");
+}
+
 // ── Compartir resultado ───────────────────────────────────────────────────
 // Copia al portapapeles una URL con la dirección como parámetro
 // Al abrir esa URL, la página ejecuta la consulta automáticamente
