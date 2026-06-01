@@ -2,108 +2,163 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>AR · Parcela</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
+
     body {
-      background: #0a0f1a; color: #e8f0fe;
+      background: #0a0f1a;
+      color: #e8f0fe;
       font-family: 'Courier New', monospace;
-      height: 100vh; display: flex;
-      flex-direction: column; align-items: center; justify-content: center;
-      overflow: hidden;
+      min-height: 100vh;
+      /* scrolleable en mobile, no corta contenido */
+      overflow-y: auto;
+      overflow-x: hidden;
     }
 
-    /* ── PANTALLA INICIAL ── */
+    /* ── PANTALLA INICIAL ─────────────────────────────────────── */
     #start-screen {
-      display: flex; flex-direction: column;
-      align-items: center; gap: 24px;
-      padding: 40px 24px; text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      padding: 40px 24px 48px;  /* padding generoso arriba y abajo */
+      text-align: center;
+      min-height: 100vh;
+      justify-content: center;  /* centra si hay espacio */
     }
+
     .logo-box {
-      width: 72px; height: 72px; border: 2px solid #4ade80;
-      display: flex; align-items: center; justify-content: center; position: relative;
+      width: 64px; height: 64px;
+      border: 2px solid #4ade80;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; flex-shrink: 0;
     }
     .logo-box::before {
       content: ''; position: absolute;
-      width: 40px; height: 40px; border: 1px solid #4ade8066; transform: rotate(45deg);
+      width: 36px; height: 36px;
+      border: 1px solid #4ade8066;
+      transform: rotate(45deg);
     }
-    .logo-box svg { width: 32px; height: 32px; stroke: #4ade80; fill: none; }
-    h1 { font-size: 13px; letter-spacing: 0.25em; text-transform: uppercase; color: #4ade80; font-weight: normal; }
-    .subtitle { font-size: 11px; letter-spacing: 0.15em; color: #64748b; text-transform: uppercase; margin-top: 6px; }
+    .logo-box svg { width: 28px; height: 28px; stroke: #4ade80; fill: none; }
 
+    h1 {
+      font-size: 13px; letter-spacing: 0.25em;
+      text-transform: uppercase; color: #4ade80; font-weight: normal;
+    }
+    .subtitle {
+      font-size: 11px; letter-spacing: 0.15em;
+      color: #64748b; text-transform: uppercase; margin-top: 6px;
+    }
+
+    /* tabla de datos de la parcela — ancho flexible */
     .info-parcela {
       font-size: 11px; color: #94a3b8; letter-spacing: 0.08em;
-      line-height: 2.2; border: 1px solid #1e293b; padding: 16px 24px; min-width: 260px;
+      line-height: 2.2; border: 1px solid #1e293b;
+      padding: 14px 20px;
+      width: 100%; max-width: 340px;
+      /* evitar overflow horizontal */
+      word-break: break-word;
     }
     .info-parcela span { color: #4ade80; }
 
+    /* fila con label + valor en dos columnas */
+    .info-fila {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      text-align: left;
+    }
+    .info-fila .lbl { color: #64748b; white-space: nowrap; }
+    .info-fila .val { color: #4ade80; text-align: right; word-break: break-word; }
+
+    .instrucciones {
+      font-size: 11px; color: #475569;
+      line-height: 1.8; letter-spacing: 0.05em;
+      max-width: 300px;
+    }
+
     #btn-ar {
-      background: transparent; border: 1px solid #4ade80; color: #4ade80;
-      font-family: 'Courier New', monospace; font-size: 12px;
-      letter-spacing: 0.2em; text-transform: uppercase;
-      padding: 16px 40px; cursor: pointer; position: relative;
+      background: transparent;
+      border: 1px solid #4ade80;
+      color: #4ade80;
+      font-family: 'Courier New', monospace;
+      font-size: 12px; letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 16px 32px;
+      cursor: pointer; position: relative;
       transition: all 0.2s; touch-action: manipulation;
+      /* ancho mínimo para no cortarse */
+      min-width: 220px;
     }
     #btn-ar:hover, #btn-ar:active { background: #4ade8011; }
     #btn-ar:disabled { border-color: #334155; color: #334155; cursor: not-allowed; }
     #btn-ar::after {
-      content: ''; position: absolute; bottom: -4px; right: -4px;
-      width: 100%; height: 100%; border: 1px solid #4ade8033;
-    }
-    .instrucciones { font-size: 11px; color: #475569; line-height: 1.8; letter-spacing: 0.05em; max-width: 280px; }
-    #error-msg {
-      display: none; font-size: 11px; color: #f87171;
-      letter-spacing: 0.08em; padding: 16px; border: 1px solid #f8717133;
-      max-width: 280px; line-height: 1.7; text-align: center;
+      content: ''; position: absolute;
+      bottom: -4px; right: -4px;
+      width: 100%; height: 100%;
+      border: 1px solid #4ade8033;
     }
 
-    /* ── CANVAS ── */
+    #error-msg {
+      display: none;
+      font-size: 11px; color: #f87171;
+      letter-spacing: 0.08em;
+      padding: 16px; border: 1px solid #f8717133;
+      max-width: 300px; line-height: 1.7; text-align: center;
+      width: 100%;
+    }
+
+    /* ── CANVAS AR ────────────────────────────────────────────── */
     #canvas-ar {
       display: none; position: fixed; top: 0; left: 0;
       width: 100%; height: 100%; touch-action: none;
     }
 
-    /* ── HUD ── */
+    /* ── HUD ──────────────────────────────────────────────────── */
     #hud {
       display: none; position: fixed; top: 0; left: 0;
       width: 100%; height: 100%;
       pointer-events: none; z-index: 10;
     }
     #estado {
-      position: absolute; top: 20px; left: 0; right: 0; text-align: center;
+      position: absolute; top: 20px; left: 0; right: 0;
+      text-align: center;
       font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
       color: #4ade80; text-shadow: 0 0 12px #4ade8088; padding: 8px;
     }
     #instruccion-ar {
-      position: absolute; bottom: 220px; left: 0; right: 0; text-align: center;
-      font-size: 12px; letter-spacing: 0.08em; color: #e8f0fe; padding: 0 24px;
+      position: absolute; bottom: 220px; left: 0; right: 0;
+      text-align: center;
+      font-size: 12px; letter-spacing: 0.08em;
+      color: #e8f0fe; padding: 0 24px;
     }
 
-    /* ── PANEL DATOS ── */
+    /* ── PANEL DATOS ──────────────────────────────────────────── */
     #panel-datos {
       display: none; position: absolute; top: 50px; right: 12px;
       background: #0a0f1acc; border: 1px solid #1e293b;
       padding: 10px 14px; font-size: 10px; letter-spacing: 0.1em;
-      line-height: 2.2; backdrop-filter: blur(8px); min-width: 140px;
+      line-height: 2.2; backdrop-filter: blur(8px); min-width: 130px;
     }
     #panel-datos .lbl { color: #64748b; text-transform: uppercase; display: block; }
     #panel-datos .val { color: #4ade80; display: block; margin-bottom: 4px; }
 
-    /* ── CONTROLES DE MOVIMIENTO ── */
+    /* ── CONTROLES ────────────────────────────────────────────── */
     #controles {
       display: none; pointer-events: all;
       position: absolute; bottom: 48px; left: 0; right: 0;
-      padding: 0 16px;
+      padding: 0 12px;
     }
     .ctrl-row {
-      display: flex; justify-content: center; align-items: center; gap: 8px;
-      margin-bottom: 8px;
+      display: flex; justify-content: center;
+      align-items: center; gap: 6px; margin-bottom: 6px;
     }
     .btn-ctrl {
       background: #0a0f1acc; border: 1px solid #4ade8066;
       color: #4ade80; font-size: 18px;
-      width: 52px; height: 52px;
+      width: 50px; height: 50px;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer; touch-action: manipulation;
       backdrop-filter: blur(8px); border-radius: 4px;
@@ -111,14 +166,15 @@
       user-select: none;
     }
     .btn-ctrl:active { background: #4ade8022; border-color: #4ade80; }
-    .btn-ctrl.rot { font-size: 14px; width: 48px; height: 48px; border-color: #0891b266; color: #7dd3fc; }
+    .btn-ctrl.rot { font-size: 14px; width: 46px; height: 46px; border-color: #0891b266; color: #7dd3fc; }
     .btn-ctrl.rot:active { background: #0891b222; }
     .btn-ctrl.reset-btn {
-      font-size: 10px; letter-spacing: 0.1em; width: auto;
-      padding: 0 14px; border-color: #f8717144; color: #f87171;
+      font-size: 9px; letter-spacing: 0.1em;
+      width: auto; padding: 0 12px;
+      border-color: #f8717144; color: #f87171;
     }
 
-    /* ── BTN SALIR ── */
+    /* ── BTN SALIR ────────────────────────────────────────────── */
     #btn-salir {
       pointer-events: all; position: absolute; top: 16px; right: 16px;
       background: transparent; border: 1px solid #f8717166; color: #f87171;
@@ -127,7 +183,7 @@
       padding: 8px 14px; cursor: pointer; touch-action: manipulation;
     }
 
-    /* ── RETICLE HUD ── */
+    /* ── RETICLE ──────────────────────────────────────────────── */
     #reticle-hud {
       position: absolute; top: 50%; left: 50%;
       transform: translate(-50%, -50%);
@@ -137,9 +193,9 @@
     #reticle-hud .v { position: absolute; top: 0; left: 50%; width: 1px; height: 100%; background: #4ade80; opacity: 0.5; }
     #reticle-hud .d { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 5px; height: 5px; background: #4ade80; border-radius: 50%; }
 
-    /* distancia display */
     #dist-display {
-      position: absolute; bottom: 210px; left: 0; right: 0; text-align: center;
+      position: absolute; bottom: 210px; left: 0; right: 0;
+      text-align: center;
       font-size: 10px; letter-spacing: 0.12em; color: #475569;
     }
   </style>
@@ -152,14 +208,18 @@
         <path d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25"/>
       </svg>
     </div>
-    <div><h1>Parcela AR</h1><div class="subtitle">Visualizador volumétrico</div></div>
+
+    <div>
+      <h1>Parcela AR</h1>
+      <div class="subtitle">Visualizador volumétrico</div>
+    </div>
 
     <div class="info-parcela">
-      <div>DIRECCIÓN &nbsp;<span id="lbl-dir">—</span></div>
-      <div>ALTURA MÁX &nbsp;<span id="lbl-alt">—</span></div>
-      <div>FRENTE &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="lbl-fre">—</span></div>
-      <div>SUPERFICIE &nbsp;<span id="lbl-sup">—</span></div>
-      <div>FOT &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="lbl-fot">—</span></div>
+      <div class="info-fila"><span class="lbl">DIRECCIÓN</span>  <span class="val" id="lbl-dir">—</span></div>
+      <div class="info-fila"><span class="lbl">ALTURA MÁX</span> <span class="val" id="lbl-alt">—</span></div>
+      <div class="info-fila"><span class="lbl">FRENTE</span>     <span class="val" id="lbl-fre">—</span></div>
+      <div class="info-fila"><span class="lbl">SUPERFICIE</span> <span class="val" id="lbl-sup">—</span></div>
+      <div class="info-fila"><span class="lbl">FOT</span>        <span class="val" id="lbl-fot">—</span></div>
     </div>
 
     <div class="instrucciones">
@@ -175,41 +235,32 @@
 
   <div id="hud">
     <div id="estado">Apuntá hacia la parcela y tocá la pantalla</div>
-
     <div id="reticle-hud">
       <div class="h"></div><div class="v"></div><div class="d"></div>
     </div>
-
     <div id="panel-datos">
       <span class="lbl">Altura</span><span class="val" id="pd-alt">—</span>
       <span class="lbl">Frente</span><span class="val" id="pd-fre">—</span>
       <span class="lbl">Superficie</span><span class="val" id="pd-sup">—</span>
       <span class="lbl">FOT</span><span class="val" id="pd-fot">—</span>
     </div>
-
     <div id="instruccion-ar">Tocá para colocar el volumen a 20 m adelante</div>
     <div id="dist-display"></div>
-
-    <!-- CONTROLES -->
     <div id="controles">
-      <!-- Fila adelante/atrás -->
       <div class="ctrl-row">
-        <div class="btn-ctrl" id="btn-adelante" title="Alejar">▲</div>
+        <div class="btn-ctrl" id="btn-adelante">▲</div>
       </div>
-      <!-- Fila izquierda / rotar / derecha -->
       <div class="ctrl-row">
-        <div class="btn-ctrl" id="btn-izq" title="Izquierda">◀</div>
-        <div class="btn-ctrl rot" id="btn-rot-izq" title="Rotar izq">↺</div>
+        <div class="btn-ctrl" id="btn-izq">◀</div>
+        <div class="btn-ctrl rot" id="btn-rot-izq">↺</div>
         <div class="btn-ctrl reset-btn" id="btn-reubicar">REUBICAR</div>
-        <div class="btn-ctrl rot" id="btn-rot-der" title="Rotar der">↻</div>
-        <div class="btn-ctrl" id="btn-der" title="Derecha">▶</div>
+        <div class="btn-ctrl rot" id="btn-rot-der">↻</div>
+        <div class="btn-ctrl" id="btn-der">▶</div>
       </div>
-      <!-- Fila atrás -->
       <div class="ctrl-row">
-        <div class="btn-ctrl" id="btn-atras" title="Acercar">▼</div>
+        <div class="btn-ctrl" id="btn-atras">▼</div>
       </div>
     </div>
-
     <button id="btn-salir" onclick="salirAR()">✕ Salir</button>
   </div>
 
@@ -223,59 +274,48 @@
   <script type="module">
     import * as THREE from 'three';
 
-    // ── DATOS ─────────────────────────────────────────────────────────────────
+    // ── DATOS ──────────────────────────────────────────────────────────────
     let PARCELA = {
-      altura_max_m: 30,
-      superficie_m2: 510,
-      frente_m: 17,
-      fondo_m: 30,
-      fot: 3.5,
-      direccion: 'Demo · ejemplo'
+      altura_max_m: 30, superficie_m2: 510,
+      frente_m: 17, fondo_m: 30, fot: 3.5, direccion: 'Demo · ejemplo'
     };
-
     try {
       const s = sessionStorage.getItem('parcela_ar');
       if (s) {
         const d = JSON.parse(s);
         PARCELA = {
-          altura_max_m : d.altura_maxima_m      || 30,
-          superficie_m2: d.superficie_terreno_m2 || 510,
-          frente_m     : d.frente_m              || 17,
-          fondo_m      : d.fondo_m               || 30,
-          fot          : d.fot                   || '—',
-          direccion    : d.direccion             || '—'
+          altura_max_m : d.altura_maxima_m       || 30,
+          superficie_m2: d.superficie_terreno_m2  || 510,
+          frente_m     : d.frente_m               || 17,
+          fondo_m      : d.fondo_m                || 30,
+          fot          : d.fot                    || '—',
+          direccion    : d.direccion              || '—'
         };
       }
     } catch(e) {}
 
-    // Distancia inicial a la que aparece el edificio (metros)
     const DIST_INICIAL = 20;
-    // Paso de movimiento por botón (metros)
-    const PASO_M = 0.5;
-    // Paso de rotación por botón (radianes)
+    const PASO_M   = 0.5;
     const PASO_ROT = Math.PI / 16;
-
     const fmt = v => typeof v === 'number' ? v.toLocaleString('es-AR', {maximumFractionDigits:1}) : v;
 
     // Poblar UI
-    ['dir','alt','fre','sup','fot'].forEach(k => {
-      const vals = { dir: PARCELA.direccion, alt: `${fmt(PARCELA.altura_max_m)} m`,
-        fre: `${fmt(PARCELA.frente_m)} m`, sup: `${fmt(PARCELA.superficie_m2)} m²`, fot: fmt(PARCELA.fot) };
-      document.getElementById('lbl-'+k).textContent = vals[k];
-    });
-    document.getElementById('pd-alt').textContent = `${fmt(PARCELA.altura_max_m)} m`;
-    document.getElementById('pd-fre').textContent = `${fmt(PARCELA.frente_m)} m`;
-    document.getElementById('pd-sup').textContent = `${fmt(PARCELA.superficie_m2)} m²`;
-    document.getElementById('pd-fot').textContent = fmt(PARCELA.fot);
+    document.getElementById('lbl-dir').textContent = PARCELA.direccion;
+    document.getElementById('lbl-alt').textContent = `${fmt(PARCELA.altura_max_m)} m`;
+    document.getElementById('lbl-fre').textContent = `${fmt(PARCELA.frente_m)} m`;
+    document.getElementById('lbl-sup').textContent = `${fmt(PARCELA.superficie_m2)} m²`;
+    document.getElementById('lbl-fot').textContent = fmt(PARCELA.fot);
+    document.getElementById('pd-alt').textContent  = `${fmt(PARCELA.altura_max_m)} m`;
+    document.getElementById('pd-fre').textContent  = `${fmt(PARCELA.frente_m)} m`;
+    document.getElementById('pd-sup').textContent  = `${fmt(PARCELA.superficie_m2)} m²`;
+    document.getElementById('pd-fot').textContent  = fmt(PARCELA.fot);
 
-    // ── ESTADO ────────────────────────────────────────────────────────────────
+    // ── ESTADO ─────────────────────────────────────────────────────────────
     let renderer, scene, camera;
     let xrSession = null, hitTestSource = null, hitTestSourceRequested = false;
-    let reticle3d;
-    let grupoEdificio = null;
-    let edificioColocado = false;
+    let reticle3d, grupoEdificio = null, edificioColocado = false;
 
-    // ── VERIFICAR SOPORTE ─────────────────────────────────────────────────────
+    // ── VERIFICAR SOPORTE ───────────────────────────────────────────────────
     const btnAR = document.getElementById('btn-ar');
     async function verificarSoporte() {
       if (!navigator.xr) { mostrarError('Tu navegador no soporta WebXR. Usá Chrome en Android.'); return; }
@@ -284,12 +324,12 @@
       btnAR.disabled = false;
     }
     function mostrarError(msg) {
-      document.getElementById('error-msg').textContent = msg;
-      document.getElementById('error-msg').style.display = 'block';
+      const el = document.getElementById('error-msg');
+      el.textContent = msg; el.style.display = 'block';
       btnAR.disabled = true;
     }
 
-    // ── INICIAR THREE.JS ──────────────────────────────────────────────────────
+    // ── INIT THREE ──────────────────────────────────────────────────────────
     function initThree() {
       renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas-ar'), antialias: true, alpha: true });
       renderer.setPixelRatio(window.devicePixelRatio);
@@ -301,10 +341,8 @@
 
       scene.add(new THREE.AmbientLight(0xffffff, 1.6));
       const dir = new THREE.DirectionalLight(0x4ade80, 1.2);
-      dir.position.set(3, 8, 3);
-      scene.add(dir);
+      dir.position.set(3, 8, 3); scene.add(dir);
 
-      // Reticle 3D (pequeño, solo orientación)
       const rg = new THREE.RingGeometry(0.06, 0.09, 32);
       rg.rotateX(-Math.PI / 2);
       reticle3d = new THREE.Mesh(rg, new THREE.MeshBasicMaterial({ color: 0x4ade80, transparent: true, opacity: 0.7, side: THREE.DoubleSide }));
@@ -312,146 +350,98 @@
       scene.add(reticle3d);
     }
 
-    // ── CREAR EDIFICIO ────────────────────────────────────────────────────────
-    // Forma más realista: planta baja más alta + pisos típicos + terraza
+    // ── CREAR EDIFICIO ──────────────────────────────────────────────────────
     function crearEdificio(posicionBase) {
       if (grupoEdificio) scene.remove(grupoEdificio);
       const grupo = new THREE.Group();
+      const W = PARCELA.frente_m, D = PARCELA.fondo_m, H = PARCELA.altura_max_m;
 
-      const W = PARCELA.frente_m;
-      const D = PARCELA.fondo_m;
-      const H = PARCELA.altura_max_m;
-
-      const MAT_SOLIDO = new THREE.MeshStandardMaterial({
-        color: 0x4ade80, transparent: true, opacity: 0.28,
-        side: THREE.DoubleSide, depthWrite: false
-      });
+      const MAT_SOLIDO = new THREE.MeshStandardMaterial({ color: 0x4ade80, transparent: true, opacity: 0.28, side: THREE.DoubleSide, depthWrite: false });
       const MAT_ARISTA = new THREE.LineBasicMaterial({ color: 0x4ade80 });
-      const MAT_LOSA   = new THREE.MeshStandardMaterial({
-        color: 0x4ade80, transparent: true, opacity: 0.55,
-        side: THREE.DoubleSide, depthWrite: false
-      });
-      const MAT_TECHO  = new THREE.MeshStandardMaterial({
-        color: 0x4ade80, transparent: true, opacity: 0.65,
-        side: THREE.DoubleSide, depthWrite: false
-      });
+      const MAT_LOSA   = new THREE.MeshStandardMaterial({ color: 0x4ade80, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false });
+      const MAT_TECHO  = new THREE.MeshStandardMaterial({ color: 0x4ade80, transparent: true, opacity: 0.65, side: THREE.DoubleSide, depthWrite: false });
 
-      // ── Cuerpo principal ──
       const geomCuerpo = new THREE.BoxGeometry(W, H, D);
       grupo.add(new THREE.Mesh(geomCuerpo, MAT_SOLIDO));
       grupo.add(new THREE.LineSegments(new THREE.EdgesGeometry(geomCuerpo), MAT_ARISTA));
 
-      // ── Losas de piso ──
-      // Planta baja: 3.5m, pisos típicos: 3m
-      const altPB   = 3.5;
-      const altPiso = 3.0;
-      const nPisos  = Math.floor((H - altPB) / altPiso);
-
+      const altPB = 3.5, altPiso = 3.0;
+      const nPisos = Math.floor((H - altPB) / altPiso);
       for (let i = 0; i <= nPisos; i++) {
         const yLosa = i === 0 ? altPB : altPB + i * altPiso;
-        if (yLosa >= H - 0.5) continue; // no superponer con techo
-
+        if (yLosa >= H - 0.5) continue;
         const geomLosa = new THREE.PlaneGeometry(W, D);
         geomLosa.rotateX(-Math.PI / 2);
         const losa = new THREE.Mesh(geomLosa, MAT_LOSA);
-        losa.position.y = yLosa;
-        grupo.add(losa);
-
-        // Línea de losa en fachada (más visible)
+        losa.position.y = yLosa; grupo.add(losa);
         const puntos = [
-          new THREE.Vector3(-W/2, yLosa, -D/2),
-          new THREE.Vector3( W/2, yLosa, -D/2),
-          new THREE.Vector3( W/2, yLosa,  D/2),
-          new THREE.Vector3(-W/2, yLosa,  D/2),
+          new THREE.Vector3(-W/2, yLosa, -D/2), new THREE.Vector3( W/2, yLosa, -D/2),
+          new THREE.Vector3( W/2, yLosa,  D/2), new THREE.Vector3(-W/2, yLosa,  D/2),
           new THREE.Vector3(-W/2, yLosa, -D/2),
         ];
-        const lineaLosa = new THREE.Line(
-          new THREE.BufferGeometry().setFromPoints(puntos),
-          new THREE.LineBasicMaterial({ color: 0x4ade80, transparent: true, opacity: 0.9 })
-        );
-        grupo.add(lineaLosa);
+        grupo.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(puntos),
+          new THREE.LineBasicMaterial({ color: 0x4ade80, transparent: true, opacity: 0.9 })));
       }
 
-      // ── Techo ──
       const geomTecho = new THREE.PlaneGeometry(W, D);
       geomTecho.rotateX(-Math.PI / 2);
       const techo = new THREE.Mesh(geomTecho, MAT_TECHO);
-      techo.position.y = H;
-      grupo.add(techo);
+      techo.position.y = H; grupo.add(techo);
 
-      // ── Posicionar: base en el suelo ──
       grupo.position.copy(posicionBase);
-      // La geometría tiene su origen en el centro → desplazamos Y en H/2
       grupo.position.y += H / 2;
-
       scene.add(grupo);
       grupoEdificio = grupo;
       return grupo;
     }
 
-    // ── COLOCAR A DISTANCIA ───────────────────────────────────────────────────
-    // Cuando el usuario toca, proyectamos un punto a DIST_INICIAL metros
-    // en la dirección que apunta la cámara, en el plano horizontal (Y=suelo).
+    // ── COLOCAR A DISTANCIA ─────────────────────────────────────────────────
     function colocarEdificioADistancia() {
-      // Dirección de la cámara en el espacio XR
       const camDir = new THREE.Vector3();
       camera.getWorldDirection(camDir);
-      camDir.y = 0;  // solo componente horizontal
+      camDir.y = 0;
       if (camDir.length() < 0.01) camDir.set(0, 0, -1);
       camDir.normalize();
-
-      // Posición de la cámara en el espacio XR
       const camPos = new THREE.Vector3();
       camera.getWorldPosition(camPos);
-
-      // Punto en el suelo a DIST_INICIAL metros adelante
       const basePos = new THREE.Vector3(
         camPos.x + camDir.x * DIST_INICIAL,
-        camPos.y - 1.6, // asumimos que la cámara está a ~1.6m del suelo
+        camPos.y - 1.6,
         camPos.z + camDir.z * DIST_INICIAL
       );
-
       crearEdificio(basePos);
       edificioColocado = true;
-
-      document.getElementById('controles').style.display    = 'block';
-      document.getElementById('panel-datos').style.display  = 'block';
-      document.getElementById('reticle-hud').style.opacity  = '0';
+      document.getElementById('controles').style.display   = 'block';
+      document.getElementById('panel-datos').style.display = 'block';
+      document.getElementById('reticle-hud').style.opacity = '0';
       document.getElementById('instruccion-ar').textContent = '▲▼◀▶ mover · ↺↻ rotar · REUBICAR para reposicionar';
       document.getElementById('estado').textContent         = 'Volumen colocado';
       document.getElementById('dist-display').textContent   = '';
     }
 
-    // ── REUBICAR ──────────────────────────────────────────────────────────────
+    // ── REUBICAR ────────────────────────────────────────────────────────────
     window.reubicarEdificio = function() {
       edificioColocado = false;
       if (grupoEdificio) { scene.remove(grupoEdificio); grupoEdificio = null; }
-      document.getElementById('controles').style.display    = 'none';
-      document.getElementById('panel-datos').style.display  = 'none';
-      document.getElementById('reticle-hud').style.opacity  = '1';
+      document.getElementById('controles').style.display   = 'none';
+      document.getElementById('panel-datos').style.display = 'none';
+      document.getElementById('reticle-hud').style.opacity = '1';
       document.getElementById('estado').textContent         = 'Apuntá hacia la parcela y tocá la pantalla';
       document.getElementById('instruccion-ar').textContent = 'Tocá para colocar el volumen a 20 m adelante';
     };
 
-    // ── BOTONES DE CONTROL ────────────────────────────────────────────────────
+    // ── CONTROLES ───────────────────────────────────────────────────────────
     function moverEdificio(dx, dz) {
       if (!grupoEdificio) return;
-      // Mover en la dirección relativa a la cámara
       const camDir = new THREE.Vector3();
       camera.getWorldDirection(camDir);
       camDir.y = 0; camDir.normalize();
       const derecha = new THREE.Vector3(-camDir.z, 0, camDir.x);
-
-      grupoEdificio.position.addScaledVector(derecha,  dx);
-      grupoEdificio.position.addScaledVector(camDir,   dz);
+      grupoEdificio.position.addScaledVector(derecha, dx);
+      grupoEdificio.position.addScaledVector(camDir,  dz);
     }
+    function rotarEdificio(dr) { if (grupoEdificio) grupoEdificio.rotation.y += dr; }
 
-    function rotarEdificio(dr) {
-      if (!grupoEdificio) return;
-      grupoEdificio.rotation.y += dr;
-    }
-
-    // Bind botones — con repetición al mantener presionado
     function bindBtn(id, accion) {
       const el = document.getElementById(id);
       let intervalo = null;
@@ -472,21 +462,17 @@
     bindBtn('btn-rot-der',  () => rotarEdificio( PASO_ROT));
     document.getElementById('btn-reubicar').addEventListener('click', window.reubicarEdificio);
 
-    // ── LOOP PRINCIPAL ────────────────────────────────────────────────────────
+    // ── LOOP XR ─────────────────────────────────────────────────────────────
     function onXRFrame(timestamp, frame) {
       if (!frame) return;
       const refSpace = renderer.xr.getReferenceSpace();
       const session  = renderer.xr.getSession();
-
       if (!hitTestSourceRequested) {
         session.requestReferenceSpace('viewer').then(vs => {
           session.requestHitTestSource({ space: vs }).then(src => { hitTestSource = src; });
         });
         hitTestSourceRequested = true;
       }
-
-      // Solo usamos hit-test para mostrar el cursor orientativo
-      // El edificio se coloca a distancia fija, no sobre el hit-test
       if (hitTestSource && !edificioColocado) {
         const hits = frame.getHitTestResults(hitTestSource);
         reticle3d.visible = hits.length > 0;
@@ -496,17 +482,12 @@
           reticle3d.matrix.decompose(reticle3d.position, reticle3d.quaternion, reticle3d.scale);
         }
       }
-
       renderer.render(scene, camera);
     }
 
-    // ── SELECT (toque en AR) ──────────────────────────────────────────────────
-    function onSelect() {
-      if (edificioColocado) return;
-      colocarEdificioADistancia();
-    }
+    function onSelect() { if (!edificioColocado) colocarEdificioADistancia(); }
 
-    // ── INICIAR SESIÓN AR ─────────────────────────────────────────────────────
+    // ── INICIAR AR ──────────────────────────────────────────────────────────
     async function iniciarAR() {
       initThree();
       try {
@@ -519,28 +500,25 @@
 
       renderer.xr.setReferenceSpaceType('local');
       await renderer.xr.setSession(xrSession);
-
       xrSession.addEventListener('select', onSelect);
       xrSession.addEventListener('end', onSessionEnd);
 
       document.getElementById('start-screen').style.display = 'none';
       document.getElementById('canvas-ar').style.display    = 'block';
       document.getElementById('hud').style.display          = 'block';
-
       renderer.setAnimationLoop(onXRFrame);
     }
 
     function onSessionEnd() {
       hitTestSource = null; hitTestSourceRequested = false;
       edificioColocado = false; grupoEdificio = null;
-      document.getElementById('canvas-ar').style.display  = 'none';
-      document.getElementById('hud').style.display        = 'none';
+      document.getElementById('canvas-ar').style.display    = 'none';
+      document.getElementById('hud').style.display          = 'none';
       document.getElementById('start-screen').style.display = 'flex';
       renderer.setAnimationLoop(null);
     }
 
     window.salirAR = () => { if (xrSession) xrSession.end(); };
-
     btnAR.addEventListener('click', iniciarAR);
     verificarSoporte();
   </script>

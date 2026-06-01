@@ -146,11 +146,8 @@ function renderizar(d) {
     texto("m-altura", d.altura_maxima_m != null ? fmt(d.altura_maxima_m, 1) : "—");
     texto("m-pisos",  d.pisos_estimados != null
         ? `${d.pisos_estimados} ` : "—");
-    // Restaurar la unidad "p" en pisos estimados
-    if (d.pisos_estimados != null) {
-        const el = document.getElementById("m-pisos");
-        el.innerHTML = `${d.pisos_estimados} <span class="metric-unit">p</span>`;
-    }
+    // pisos estimados
+    texto("m-pisos", d.pisos_estimados != null ? String(d.pisos_estimados) : "—");
 
     // Barra de potencial
     if (maxM2 && actM2 != null && maxM2 > 0) {
@@ -202,7 +199,7 @@ function renderizar(d) {
         ? `${d.coordenadas.lat.toFixed(4)} / ${d.coordenadas.lng.toFixed(4)}`
         : "—");
     texto("i-barrio", d.barrio ?? "—");
-    texto("i-comuna", d.comuna ? `Comuna ${d.comuna}` : "—");
+    texto("i-comuna", d.comuna ?? "—");
 
     // ── Mapa Leaflet ──────────────────────────────────────────────────────
     const lat = d.coordenadas?.lat;
@@ -275,7 +272,7 @@ function descargarPDF() {
     const subtitulo = [
         d.smp    ? `SMP: ${d.smp.toUpperCase()}` : null,
         d.barrio ? d.barrio                       : null,
-        d.comuna ? `Comuna ${d.comuna}`           : null
+        d.comuna ? `Comuna ${d.comuna.replace(/^Comuna\s*/i, "")}` : null,
     ].filter(Boolean).join("  ·  ");
     doc.text(subtitulo || "—", 14, 41);
 
@@ -349,7 +346,7 @@ function descargarPDF() {
     y = seccion("IDENTIFICACIÓN", [
         ["SMP",         d.smp    ? d.smp.toUpperCase()  : "—"],
         ["Barrio",      d.barrio ? d.barrio              : "—"],
-        ["Comuna",      d.comuna ? `Comuna ${d.comuna}`  : "—"],
+        ["Comuna", d.comuna ?? "—"],
         ["Coordenadas", d.coordenadas
             ? `${d.coordenadas.lat.toFixed(6)}, ${d.coordenadas.lng.toFixed(6)}`
             : "—"],
