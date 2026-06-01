@@ -137,7 +137,9 @@ def get_indicadores_cu(smp: str) -> dict:
         "fot":                    limpiar_nan(r.get("fot_em_1")),
         "uso_permitido":          uso_texto,
         "riesgo_hidrico":         r.get("rh") == "1" or r.get("rh") == 1,
-        "proteccion_patrimonial": r.get("catalogado") == "1" or r.get("catalogado") == 1
+        "proteccion_patrimonial": r.get("catalogado") == "1" or r.get("catalogado") == 1,
+        "barrio":                 limpiar_nan(r.get("barrio")),
+        "comuna":                 limpiar_nan(r.get("comuna")),
     }
 
 # ── Endpoints ────────────────────────────────────────────────────────────
@@ -179,11 +181,10 @@ def consultar_parcela(
     smp = cat.get("smp", "")
     cu_data = get_indicadores_cu(smp)
 
-    # Paso 3b: barrio y comuna desde API de datos útiles de USIG
-    try:
-        datos_utiles = get_datos_utiles(geo["lat"], geo["lng"])
-    except Exception:
-        datos_utiles = {"barrio": None, "comuna": None}
+    datos_utiles = {
+    "barrio": cu_data.get("barrio"),
+    "comuna": cu_data.get("comuna"),
+    }
 
     # Paso 4: cálculos derivados
     sup_terreno   = float(cat.get("superficie_total") or 0)
