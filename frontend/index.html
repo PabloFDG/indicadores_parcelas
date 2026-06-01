@@ -23,29 +23,28 @@
       <div class="app-name">Parcela CABA</div>
       <div class="app-sub">Indicadores urbanísticos · Caballito</div>
     </div>
+    <button class="glosario-btn" onclick="abrirGlosario()" title="Glosario de términos">
+      <svg viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M8 7v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="8" cy="4.5" r="0.8" fill="currentColor"/>
+      </svg>
+      <span>Glosario</span>
+    </button>
   </header>
 
   <div style="position: relative;">
     <div class="search-bar">
-        <input type="text" id="input-dir"
-            placeholder="Ej: Rivadavia 5000, Acoyte 100..." />
-        <button id="btn-buscar" onclick="consultar()">Consultar</button>
+      <input type="text" id="input-dir"
+        placeholder="Ej: Rivadavia 5000, Acoyte 100..." />
+      <button id="btn-buscar" onclick="consultar()">Consultar</button>
     </div>
     <ul id="sugerencias" style="
-        display: none;
-        position: absolute;
-        top: 100%;
-        left: 0;
-        z-index: 100;
-        background: white;
-        border: 1px solid #ccd5c0;
-        border-radius: 8px;
-        list-style: none;
-        margin: 4px 0 0 0;
-        padding: 4px 0;
-        width: calc(100% - 122px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        font-size: 13px;
+      display: none; position: absolute; top: 100%; left: 0; z-index: 100;
+      background: white; border: 1px solid #ccd5c0; border-radius: 8px;
+      list-style: none; margin: 4px 0 0 0; padding: 4px 0;
+      width: calc(100% - 122px); box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      font-size: 13px;
     "></ul>
   </div>
 
@@ -66,21 +65,22 @@
   <div class="results" id="results">
     <div class="col-data">
 
+      <!-- ── CAPACIDAD CONSTRUCTIVA ──────────────────────────────────── -->
       <div>
         <div class="section-label">capacidad constructiva</div>
         <div class="card">
           <div class="metrics-grid">
             <div class="metric-big">
-              <div class="metric-label">superficie edificable máx.</div>
-              <div class="metric-value" id="m-edif-max">— <span class="metric-unit">m²</span></div>
+              <div class="metric-label">superficie edificable máx. en m²</div>
+              <div class="metric-value" id="m-edif-max">—</div>
             </div>
             <div class="metric">
-              <div class="metric-label">potencial remanente</div>
-              <div class="metric-value" id="m-remanente">— <span class="metric-unit">m²</span></div>
+              <div class="metric-label">potencial remanente en m²</div>
+              <div class="metric-value" id="m-remanente">—</div>
             </div>
             <div class="metric">
-              <div class="metric-label">altura máxima</div>
-              <div class="metric-value" id="m-altura">— <span class="metric-unit">m</span></div>
+              <div class="metric-label">altura máxima permitida en m</div>
+              <div class="metric-value" id="m-altura">—</div>
             </div>
             <div class="metric">
               <div class="metric-label">pisos estimados</div>
@@ -97,16 +97,33 @@
         </div>
       </div>
 
+      <!-- ── TERRENO Y NORMATIVA ────────────────────────────────────── -->
       <div>
         <div class="section-label">terreno y normativa</div>
         <div class="card">
+          <div class="info-row">
+            <span class="info-label">Frente / fondo</span>
+            <span class="info-value" id="i-ff">—</span>
+          </div>
           <div class="info-row">
             <span class="info-label">Superficie del terreno</span>
             <span class="info-value" id="i-sup">—</span>
           </div>
           <div class="info-row">
-            <span class="info-label">Frente / fondo</span>
-            <span class="info-value" id="i-ff">—</span>
+            <span class="info-label">Superficie edificada actualmente</span>
+            <span class="info-value" id="i-edif-actual">—</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Unidades funcionales</span>
+            <span class="info-value" id="i-uf">—</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Pisos sobre rasante</span>
+            <span class="info-value" id="i-pisos-sr">—</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Pisos bajo rasante</span>
+            <span class="info-value" id="i-pisos-br">—</span>
           </div>
           <div class="info-row">
             <span class="info-label">FOT</span>
@@ -136,6 +153,7 @@
         <div id="map"></div>
       </div>
 
+      <!-- ── IDENTIFICACIÓN ──────────────────────────────────────────── -->
       <div class="card">
         <div class="section-label" style="margin-bottom:10px">identificación</div>
         <div class="info-row">
@@ -143,40 +161,44 @@
           <span class="info-value mono" id="i-smp">—</span>
         </div>
         <div class="info-row">
-          <span class="info-label">Edificación actual</span>
-          <span class="info-value" id="i-edif-actual">—</span>
-        </div>
-        <div class="info-row">
           <span class="info-label">Coordenadas</span>
           <span class="info-value mono" id="i-coords">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Barrio</span>
+          <span class="info-value" id="i-barrio">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Comuna</span>
+          <span class="info-value" id="i-comuna">—</span>
         </div>
       </div>
 
       <button class="share-btn" onclick="descargarPDF()">
         <svg viewBox="0 0 14 14" fill="none">
-            <path d="M7 1v8M4 6l3 3 3-3M2 11h10"
-                stroke="currentColor" stroke-width="1.2"
-                stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M7 1v8M4 6l3 3 3-3M2 11h10"
+            stroke="currentColor" stroke-width="1.2"
+            stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
         Descargar ficha PDF
       </button>
-      <button class="share-btn" onclick="compartir()" style="margin-top: 6px;">
-          <svg viewBox="0 0 14 14" fill="none">
-              <circle cx="11" cy="2.5" r="1.5" stroke="currentColor" stroke-width="1"/>
-              <circle cx="11" cy="11.5" r="1.5" stroke="currentColor" stroke-width="1"/>
-              <circle cx="3" cy="7" r="1.5" stroke="currentColor" stroke-width="1"/>
-              <line x1="4.3" y1="6.2" x2="9.7" y2="3.3" stroke="currentColor" stroke-width="1"/>
-              <line x1="4.3" y1="7.8" x2="9.7" y2="10.7" stroke="currentColor" stroke-width="1"/>
-          </svg>
-          Compartir resultado
+      <button class="share-btn" onclick="compartir()" style="margin-top:6px">
+        <svg viewBox="0 0 14 14" fill="none">
+          <circle cx="11" cy="2.5" r="1.5" stroke="currentColor" stroke-width="1"/>
+          <circle cx="11" cy="11.5" r="1.5" stroke="currentColor" stroke-width="1"/>
+          <circle cx="3" cy="7" r="1.5" stroke="currentColor" stroke-width="1"/>
+          <line x1="4.3" y1="6.2" x2="9.7" y2="3.3" stroke="currentColor" stroke-width="1"/>
+          <line x1="4.3" y1="7.8" x2="9.7" y2="10.7" stroke="currentColor" stroke-width="1"/>
+        </svg>
+        Compartir resultado
       </button>
-      <button class="share-btn share-btn-ar" onclick="abrirAR()" style="margin-top: 6px;">
-          <svg viewBox="0 0 14 14" fill="none">
-              <path d="M7 2L2 5v4l5 3 5-3V5L7 2z" stroke="currentColor" stroke-width="1" fill="none"/>
-              <path d="M2 5l5 3 5-3" stroke="currentColor" stroke-width="1"/>
-              <line x1="7" y1="8" x2="7" y2="11" stroke="currentColor" stroke-width="1"/>
-          </svg>
-          Ver en Realidad Aumentada
+      <button class="share-btn share-btn-ar" onclick="abrirAR()" style="margin-top:6px">
+        <svg viewBox="0 0 14 14" fill="none">
+          <path d="M7 2L2 5v4l5 3 5-3V5L7 2z" stroke="currentColor" stroke-width="1" fill="none"/>
+          <path d="M2 5l5 3 5-3" stroke="currentColor" stroke-width="1"/>
+          <line x1="7" y1="8" x2="7" y2="11" stroke="currentColor" stroke-width="1"/>
+        </svg>
+        Ver en Realidad Aumentada
       </button>
 
     </div>
@@ -186,6 +208,136 @@
     Datos: Catastro GCBA · Código Urbanístico CABA (31/12/2024) · OpenStreetMap · CARTO
   </footer>
 
+</div>
+
+<!-- ── OVERLAY GLOSARIO ────────────────────────────────────────────────── -->
+<div class="glosario-overlay" id="glosario-overlay" onclick="cerrarGlosario(event)">
+  <div class="glosario-panel" id="glosario-panel">
+    <div class="glosario-header">
+      <span class="glosario-titulo">Glosario de términos</span>
+      <button class="glosario-cerrar" onclick="cerrarGlosario()">
+        <svg viewBox="0 0 14 14" fill="none">
+          <line x1="2" y1="2" x2="12" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="12" y1="2" x2="2" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <div class="glosario-body">
+
+      <!-- ── TÉRMINOS GENERALES ───────────────────────────────────────── -->
+      <div class="glosario-seccion-titulo">Términos generales</div>
+
+      <div class="glosario-item">
+        <div class="glosario-term">Áreas de Protección Histórica (APH)</div>
+        <div class="glosario-def">Sectores, barrios, calles o conjuntos de manzanas que poseen un alto valor histórico-cultural, arquitectónico, estético, arqueológico o ambiental. Están regulados bajo normas específicas para ese sector.</div>
+      </div>
+      <div class="glosario-item">
+        <div class="glosario-term">Altura máxima</div>
+        <div class="glosario-def">Distancia máxima vertical sobre las fachadas y sobre la Línea Oficial que prescribe el Código Urbanístico. Altura en metros que puede tener una nueva construcción en esa parcela.</div>
+      </div>
+      <div class="glosario-item">
+        <div class="glosario-term">Capacidad constructiva</div>
+        <div class="glosario-def">Superficie potencial total de cada parcela, determinada por el área edificable y el plano límite correspondiente a cada unidad de edificabilidad.</div>
+      </div>
+      <div class="glosario-item">
+        <div class="glosario-term">Distrito</div>
+        <div class="glosario-def">Zona urbanística de CABA determinada por el Código. Cada distrito tiene parámetros propios de altura, FOT, usos permitidos y condiciones de edificación. Ejemplos: CA (Corredores Altos: ejes de alta conectividad y fuerte presencia comercial, principalmente sobre las avenidas) y APH.</div>
+      </div>
+      <div class="glosario-item">
+        <div class="glosario-term">Edificabilidad</div>
+        <div class="glosario-def">Capacidad constructiva del inmueble.</div>
+      </div>
+      <div class="glosario-item">
+        <div class="glosario-term">Factor de Ocupación Total (F.O.T.)</div>
+        <div class="glosario-def">Número que multiplicado por la superficie total de la parcela determina la superficie edificable. El F.O.T. sólo resulta aplicable en aquellas Áreas Especiales en que se indica. Cuanto mayor el FOT, mayor la densidad edilicia permitida. Por ejemplo, un FOT de 3 significa que se pueden construir hasta 3 m² cubiertos por cada m² de terreno.</div>
+      </div>
+      <div class="glosario-item">
+        <div class="glosario-term">Manzana</div>
+        <div class="glosario-def">Superficie de terreno delimitada por vía pública y/o deslinde de corredor ferroviario y/o registrada como tal.</div>
+      </div>
+      <div class="glosario-item">
+        <div class="glosario-term">Parcela</div>
+        <div class="glosario-def">Superficie indivisa de terreno designada como tal en planos registrados por la autoridad competente.</div>
+      </div>
+      <div class="glosario-item">
+        <div class="glosario-term">Pisos estimados</div>
+        <div class="glosario-def">Cantidad aproximada de pisos que caben dentro de la altura máxima permitida.</div>
+      </div>
+      <div class="glosario-item">
+        <div class="glosario-term">Pisos sobre rasante</div>
+        <div class="glosario-def">Cantidad de pisos del edificio que están por encima del nivel de la calle (planta baja + pisos superiores).</div>
+      </div>
+      <div class="glosario-item">
+        <div class="glosario-term">Pisos bajo rasante</div>
+        <div class="glosario-def">Cantidad de pisos del edificio por debajo del nivel de la calle (sótanos, subsuelos).</div>
+      </div>
+      <div class="glosario-item">
+        <div class="glosario-term">Potencial remanente</div>
+        <div class="glosario-def">Diferencia entre la superficie edificable máxima y lo que ya está construido. Indica los m² adicionales que se podrían agregar sin superar el FOT. Si el valor es negativo, el edificio existente ya superaba el FOT antes de la reforma del Código Urbanístico.</div>
+      </div>
+      <div class="glosario-item">
+        <div class="glosario-term">Protección patrimonial</div>
+        <div class="glosario-def">El inmueble está catalogado por su valor histórico, arquitectónico o urbanístico, lo que impone restricciones a la demolición, modificación de fachadas u otras intervenciones. Hay distintos niveles.</div>
+      </div>
+      <div class="glosario-item">
+        <div class="glosario-term">Riesgo hídrico</div>
+        <div class="glosario-def">La parcela se encuentra en una zona con antecedentes de anegamiento o inundación. Implica condiciones especiales para la construcción.</div>
+      </div>
+      <div class="glosario-item">
+        <div class="glosario-term">SMP (Sección – Manzana – Parcela)</div>
+        <div class="glosario-def">Identificador único catastral de cada parcela en CABA. Se compone de tres partes: la sección (zona de la ciudad), la manzana (grupo de parcelas delimitado por calles) y la parcela (lote individual).</div>
+      </div>
+      <div class="glosario-item">
+        <div class="glosario-term">Superficie edificable</div>
+        <div class="glosario-def">Total de metros cuadrados que se pueden construir en la parcela según la normativa vigente. Se calcula multiplicando la superficie del terreno por el FOT.</div>
+      </div>
+      <div class="glosario-item">
+        <div class="glosario-term">Superficie edificada actualmente</div>
+        <div class="glosario-def">Total de metros cuadrados cubiertos registrados en catastro para el edificio existente.</div>
+      </div>
+      <div class="glosario-item">
+        <div class="glosario-term">Unidades funcionales</div>
+        <div class="glosario-def">Cantidad de unidades independientes dentro del edificio (departamentos, locales, cocheras u oficinas).</div>
+      </div>
+
+      <!-- ── USOS PERMITIDOS ─────────────────────────────────────────── -->
+      <div class="glosario-seccion-titulo">Uso permitido</div>
+
+      <div class="glosario-item">
+        <div class="glosario-term">Uso permitido (general)</div>
+        <div class="glosario-def">El que puede implantarse en un área según las normas del Código Urbanístico. Indica la función o destino del terreno, edificio o estructura asentada en él.</div>
+      </div>
+      <div class="glosario-item">
+        <div class="glosario-term">Central</div>
+        <div class="glosario-def">Zona de alta concentración de actividades comerciales, de servicios, financieras y administrativas. Corresponde a áreas como el microcentro o los corredores principales.</div>
+      </div>
+      <div class="glosario-item">
+        <div class="glosario-term">Equipamiento</div>
+        <div class="glosario-def">Reservado para servicios de uso colectivo: educación, salud, cultura, deporte, seguridad u organismos públicos. Generalmente corresponde a plazas, hospitales, escuelas o edificios de gobierno. No está destinado a vivienda ni a comercio privado.</div>
+      </div>
+      <div class="glosario-item">
+        <div class="glosario-term">Industrial</div>
+        <div class="glosario-def">Reservado para la radicación de industrias, depósitos y talleres de mediana y alta complejidad logística, con restricciones estrictas para el uso residencial.</div>
+      </div>
+      <div class="glosario-item">
+        <div class="glosario-term">Sin uso asignado</div>
+        <div class="glosario-def">Parcelas o áreas territoriales que no poseen un destino explícito en el Código Urbanístico.</div>
+      </div>
+      <div class="glosario-item">
+        <div class="glosario-term">Residencial</div>
+        <div class="glosario-def">Destinado principalmente a la localización de viviendas.</div>
+      </div>
+      <div class="glosario-item">
+        <div class="glosario-term">Residencial mixto</div>
+        <div class="glosario-def">Combina vivienda con actividades comerciales, de servicios o productivas de bajo impacto.</div>
+      </div>
+      <div class="glosario-item">
+        <div class="glosario-term">Urbanizaciones especiales</div>
+        <div class="glosario-def">Áreas con regímenes urbanísticos particulares, fuera de la zonificación general. Requieren una regulación urbanística individualizada.</div>
+      </div>
+
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast">¡Enlace copiado al portapapeles!</div>

@@ -94,6 +94,25 @@ def get_catastro(codigo_calle: int, altura: int) -> dict:
     return resp.json()
 
 
+def get_datos_utiles(lat: float, lng: float) -> dict:
+    """
+    Llama a la API de datos útiles de USIG para obtener barrio y comuna
+    a partir de coordenadas WGS84 (lat/lng).
+    """
+    url = "https://ws.usig.buenosaires.gob.ar/datos_utiles"
+    resp = requests.get(
+        url,
+        params={"x": lng, "y": lat},
+        timeout=10
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    return {
+        "barrio":  data.get("barrio"),
+        "comuna":  data.get("comuna"),
+    }
+
+
 def get_indicadores_cu(smp: str) -> dict:
     """
     Busca el SMP en el CSV del Código Urbanístico cargado en memoria
@@ -160,6 +179,12 @@ def consultar_parcela(
     smp = cat.get("smp", "")
     cu_data = get_indicadores_cu(smp)
 
+    # Paso 3b: barrio y comuna desde API de datos útiles de USIG
+    try:
+        datos_utiles = get_datos_utiles(geo["lat"], geo["lng"])
+    except Exception:
+        datos_utiles = {"barrio": None, "comuna": None}
+
     # Paso 4: cálculos derivados
     sup_terreno   = float(cat.get("superficie_total") or 0)
     fot           = float(cu_data.get("fot") or 0)
@@ -181,10 +206,20 @@ def consultar_parcela(
         "smp":          smp,
         "coordenadas":  {"lat": geo["lat"], "lng": geo["lng"]},
 
+        # ── Localización administrativa ──────────────────────────────────
+        "barrio":                             datos_utiles.get("barrio"),
+        "comuna":                             datos_utiles.get("comuna"),
+
         # ── Datos del terreno (fuente: API Catastro GCBA) ────────────────
         "superficie_terreno_m2":          limpiar_nan(sup_terreno),
         "frente_m":                       limpiar_nan(float(cat.get("frente") or 0)),
         "fondo_m":                        limpiar_nan(float(cat.get("fondo") or 0)),
+
+        # ── Datos del edificio existente (fuente: API Catastro GCBA) ─────
+        "pisos_sobre_rasante":            int(cat["pisos_sobre_rasante"]) if cat.get("pisos_sobre_rasante") not in (None, "", "0") else None,
+        "pisos_bajo_rasante":             int(cat["pisos_bajo_rasante"]) if cat.get("pisos_bajo_rasante") not in (None, "", "0") else None,
+        "unidades_funcionales":           int(cat["unidades_funcionales"]) if cat.get("unidades_funcionales") not in (None, "", "0") else None,
+        "propiedad_horizontal":           cat.get("propiedad_horizontal") == "Si",
 
         # ── Normativa urbanística (fuente: CSV Código Urbanístico GCBA) ──
         "distrito":                       cu_data.get("distrito"),

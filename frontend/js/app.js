@@ -5,8 +5,6 @@ let marcador = null;
 let datosActuales = null;
 
 // ── Historial de búsquedas ────────────────────────────────────────────────
-// Guarda las últimas 5 direcciones consultadas exitosamente en localStorage
-// localStorage persiste entre sesiones del navegador sin necesidad de backend
 const MAX_HISTORIAL = 5;
 const HISTORIAL_KEY = "parcela_caba_historial";
 
@@ -17,7 +15,6 @@ function getHistorial() {
 }
 
 function guardarEnHistorial(valor) {
-    // Evita duplicados (case-insensitive) y mantiene el más reciente primero
     let h = getHistorial().filter(x => x.toLowerCase() !== valor.toLowerCase());
     h.unshift(valor);
     if (h.length > MAX_HISTORIAL) h = h.slice(0, MAX_HISTORIAL);
@@ -33,7 +30,6 @@ function mostrarSugerencias() {
     h.forEach(item => {
         const li = document.createElement("li");
         li.textContent = item;
-        // Al hacer clic en una sugerencia: llena el input y consulta
         li.onclick = () => {
             input.value = item;
             lista.style.display = "none";
@@ -45,7 +41,6 @@ function mostrarSugerencias() {
 }
 
 function ocultarSugerencias() {
-    // setTimeout de 200ms para que el onclick de la sugerencia se ejecute antes
     setTimeout(() => {
         document.getElementById("sugerencias").style.display = "none";
     }, 200);
@@ -55,10 +50,27 @@ function ocultarSugerencias() {
 document.getElementById("input-dir").addEventListener("keydown", e => {
     if (e.key === "Enter") consultar();
 });
-// Mostrar historial al hacer foco en el input
 document.getElementById("input-dir").addEventListener("focus", mostrarSugerencias);
-// Ocultar historial al salir del input
 document.getElementById("input-dir").addEventListener("blur", ocultarSugerencias);
+
+// ── Glosario ──────────────────────────────────────────────────────────────
+function abrirGlosario() {
+    document.getElementById("glosario-overlay").classList.add("active");
+    document.body.style.overflow = "hidden";
+}
+
+function cerrarGlosario(e) {
+    if (e && e.target !== document.getElementById("glosario-overlay")) return;
+    document.getElementById("glosario-overlay").classList.remove("active");
+    document.body.style.overflow = "";
+}
+
+document.addEventListener("keydown", e => {
+    if (e.key === "Escape") {
+        document.getElementById("glosario-overlay").classList.remove("active");
+        document.body.style.overflow = "";
+    }
+});
 
 // ── Utilidades ────────────────────────────────────────────────────────────
 function mostrar(id, display = "flex") { document.getElementById(id).style.display = display; }
@@ -89,7 +101,6 @@ async function consultar() {
         }
         const d = await resp.json();
         datosActuales = d;
-        // Solo guardamos en historial si la consulta fue exitosa
         guardarEnHistorial(dir);
         ocultar("loading");
         renderizar(d);
@@ -104,7 +115,6 @@ async function consultar() {
 
 // ── Renderizado de resultados ─────────────────────────────────────────────
 function renderizar(d) {
-    // Si SMP vacío: la API de catastro no tiene datos para esa dirección
     if (!d.smp) {
         document.getElementById("error-text").textContent =
             "No se encontraron datos catastrales para esta dirección. " +
@@ -122,48 +132,59 @@ function renderizar(d) {
     const actM2 = d.superficie_edificada_actual_m2;
     const rem   = d.potencial_remanente_m2;
 
-    // Tarjeta de capacidad constructiva
-    texto("m-edif-max",  maxM2 != null ? fmt(maxM2) : "—");
+    // ── Capacidad constructiva ────────────────────────────────────────────
+    // Mostrar solo el número sin unidad (la unidad está en el label del título)
+    texto("m-edif-max", maxM2 != null ? fmt(maxM2) : "—");
+
     if (rem != null && rem < 0) {
-      texto("m-remanente", "—");
-      document.getElementById("m-remanente").closest(".metric").title =
-          "Capacidad constructiva por encima del FOT vigente";
+        texto("m-remanente", "—");
+        document.getElementById("m-remanente").closest(".metric").title =
+            "Capacidad constructiva por encima del FOT vigente";
     } else {
         texto("m-remanente", rem != null ? fmt(rem) : "—");
     }
-    texto("m-altura",    d.altura_maxima_m != null ? fmt(d.altura_maxima_m, 1) : "—");
-    texto("m-pisos",     d.pisos_estimados ?? "—");
+    texto("m-altura", d.altura_maxima_m != null ? fmt(d.altura_maxima_m, 1) : "—");
+    texto("m-pisos",  d.pisos_estimados != null
+        ? `${d.pisos_estimados} ` : "—");
+    // Restaurar la unidad "p" en pisos estimados
+    if (d.pisos_estimados != null) {
+        const el = document.getElementById("m-pisos");
+        el.innerHTML = `${d.pisos_estimados} <span class="metric-unit">p</span>`;
+    }
 
-    // Barra de potencial: solo si hay FOT y superficie edificable válida
+    // Barra de potencial
     if (maxM2 && actM2 != null && maxM2 > 0) {
-      const pct = Math.min(100, Math.round((actM2 / maxM2) * 100));
-      document.getElementById("barra-potencial").style.width = Math.min(100, pct) + "%";
-
-      document.getElementById("label-construido").textContent = `${fmt(actM2)} m² construidos`;
-
-      // Si el remanente es negativo: construido supera el FOT vigente
-      if (rem != null && rem < 0) {
-          document.getElementById("label-disponible").textContent =
-              "Capacidad constructiva por encima del FOT vigente";
-      } else {
-          document.getElementById("label-disponible").textContent =
-              rem != null ? `${fmt(rem)} m² disponibles` : "— m² disponibles";
-      }
+        const pct = Math.min(100, Math.round((actM2 / maxM2) * 100));
+        document.getElementById("barra-potencial").style.width = pct + "%";
+        document.getElementById("label-construido").textContent = `${fmt(actM2)} m² construidos`;
+        if (rem != null && rem < 0) {
+            document.getElementById("label-disponible").textContent =
+                "Capacidad constructiva por encima del FOT vigente";
+        } else {
+            document.getElementById("label-disponible").textContent =
+                rem != null ? `${fmt(rem)} m² disponibles` : "— m² disponibles";
+        }
     } else {
         document.getElementById("barra-potencial").style.width = "0%";
         document.getElementById("label-construido").textContent = "Sin datos de FOT para calcular potencial";
         document.getElementById("label-disponible").textContent = "";
     }
 
-    // Tarjeta de terreno y normativa
-    texto("i-sup",      d.superficie_terreno_m2 != null ? `${fmt(d.superficie_terreno_m2)} m²` : "—");
-    texto("i-ff",       d.frente_m && d.fondo_m
-        ? `${fmt(d.frente_m, 2)} m · ${fmt(d.fondo_m, 2)} m` : "—");
-    texto("i-fot",      d.fot != null ? fmt(d.fot, 2) : "—");
-    texto("i-distrito", d.distrito ?? "—");
-    texto("i-uso",      d.uso_permitido ?? "—");
+    // ── Terreno y normativa ───────────────────────────────────────────────
+    texto("i-ff",
+        d.frente_m && d.fondo_m
+            ? `${fmt(d.frente_m, 2)} m · ${fmt(d.fondo_m, 2)} m`
+            : "—");
+    texto("i-sup",         d.superficie_terreno_m2 != null ? `${fmt(d.superficie_terreno_m2)} m²` : "—");
+    texto("i-edif-actual", actM2 != null ? `${fmt(actM2)} m²` : "—");
+    texto("i-uf",          d.unidades_funcionales != null ? d.unidades_funcionales : "—");
+    texto("i-pisos-sr",    d.pisos_sobre_rasante  != null ? `${d.pisos_sobre_rasante}` : "—");
+    texto("i-pisos-br",    d.pisos_bajo_rasante   != null ? `${d.pisos_bajo_rasante}`  : "—");
+    texto("i-fot",         d.fot != null ? fmt(d.fot, 2) : "—");
+    texto("i-distrito",    d.distrito ?? "—");
+    texto("i-uso",         d.uso_permitido ?? "—");
 
-    // Badges de restricciones con color semántico
+    // Badges de restricciones
     const cont = document.getElementById("i-restricciones");
     cont.innerHTML = "";
     const b1 = document.createElement("span");
@@ -175,26 +196,25 @@ function renderizar(d) {
     cont.appendChild(b1);
     cont.appendChild(b2);
 
-    // Tarjeta de identificación
-    texto("i-smp",         d.smp ? d.smp.toUpperCase() : "—");
-    texto("i-edif-actual", actM2 != null ? `${fmt(actM2)} m²` : "—");
-    texto("i-coords",      d.coordenadas
+    // ── Identificación ────────────────────────────────────────────────────
+    texto("i-smp",    d.smp ? d.smp.toUpperCase() : "—");
+    texto("i-coords", d.coordenadas
         ? `${d.coordenadas.lat.toFixed(4)} / ${d.coordenadas.lng.toFixed(4)}`
         : "—");
+    texto("i-barrio", d.barrio ?? "—");
+    texto("i-comuna", d.comuna ? `Comuna ${d.comuna}` : "—");
 
-    // Mapa Leaflet con tiles de CARTO
+    // ── Mapa Leaflet ──────────────────────────────────────────────────────
     const lat = d.coordenadas?.lat;
     const lng = d.coordenadas?.lng;
     if (lat && lng) {
         if (!mapa) {
-            // Primera consulta: inicializar el mapa
             mapa = L.map("map", { zoomControl: true }).setView([lat, lng], 17);
             L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
                 attribution: "© OpenStreetMap · © CARTO",
                 subdomains: "abcd", maxZoom: 19
             }).addTo(mapa);
         } else {
-            // Consultas siguientes: mover el mapa y quitar marcador anterior
             mapa.setView([lat, lng], 17);
             if (marcador) mapa.removeLayer(marcador);
         }
@@ -206,15 +226,11 @@ function renderizar(d) {
             .openPopup();
     }
 
-    // Mostrar resultados y forzar recálculo del tamaño del mapa
-    // invalidateSize() necesario porque el mapa estaba oculto al inicializarse
     mostrar("results", "grid");
     setTimeout(() => { if (mapa) mapa.invalidateSize(); }, 100);
 }
 
 // ── Descargar ficha PDF ───────────────────────────────────────────────────
-// Usa jsPDF (cargado desde CDN en index.html) para generar el PDF en el navegador
-// No requiere backend — todo se procesa del lado del cliente
 function descargarPDF() {
     if (!datosActuales) return;
     const d = datosActuales;
@@ -225,15 +241,15 @@ function descargarPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
 
-    // ── Paleta azul formal ────────────────────────────────────────────────
-    const azulPizarra  = [51, 65, 85];      // #334155 — header
-    const teal         = [8, 145, 178];     // #0891B2 — títulos de sección
-    const tealClaro    = [224, 242, 254];   // #E0F2FE — fondo títulos sección
-    const negro        = [30, 41, 59];      // #1E293B — valores
-    const gris         = [100, 116, 139];   // #64748B — labels
-    const grisClaro    = [248, 250, 252];   // #F8FAFC — filas alternas
-    const footerBg     = [241, 245, 249];   // #F1F5F9 — footer
-    const borde        = [226, 232, 240];   // #E2E8F0 — bordes
+    // ── Paleta ────────────────────────────────────────────────────────────
+    const azulPizarra = [51, 65, 85];
+    const teal        = [8, 145, 178];
+    const tealClaro   = [224, 242, 254];
+    const negro       = [30, 41, 59];
+    const gris        = [100, 116, 139];
+    const grisClaro   = [248, 250, 252];
+    const footerBg    = [241, 245, 249];
+    const borde       = [226, 232, 240];
 
     // ── Header ────────────────────────────────────────────────────────────
     doc.setFillColor(...azulPizarra);
@@ -244,11 +260,11 @@ function descargarPDF() {
     doc.text("Parcela CABA — Indicadores Urbanísticos", 14, 10);
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(148, 163, 184);  // gris claro sobre azul
+    doc.setTextColor(148, 163, 184);
     doc.text("Caballito · Ciudad Autónoma de Buenos Aires", 14, 17);
     doc.text(`Generado el ${new Date().toLocaleDateString("es-AR")}`, 160, 17);
 
-    // ── Dirección y SMP ───────────────────────────────────────────────────
+    // ── Dirección + SMP + barrio/comuna ──────────────────────────────────
     doc.setTextColor(...negro);
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
@@ -256,85 +272,84 @@ function descargarPDF() {
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...gris);
-    doc.text(`SMP: ${d.smp ? d.smp.toUpperCase() : "—"}`, 14, 41);
+    const subtitulo = [
+        d.smp    ? `SMP: ${d.smp.toUpperCase()}` : null,
+        d.barrio ? d.barrio                       : null,
+        d.comuna ? `Comuna ${d.comuna}`           : null
+    ].filter(Boolean).join("  ·  ");
+    doc.text(subtitulo || "—", 14, 41);
 
-    // Línea separadora azul pizarra
     doc.setDrawColor(...azulPizarra);
     doc.setLineWidth(0.8);
     doc.line(14, 45, 196, 45);
 
-    // ── Función para dibujar una sección ──────────────────────────────────
-    // Dibuja el título de sección con fondo teal claro y las filas con
-    // fondo alternado para mejorar la legibilidad
+    // ── Función para dibujar sección ──────────────────────────────────────
     function seccion(titulo, filas, yInicio) {
-        // Fondo teal claro del título
         doc.setFillColor(...tealClaro);
         doc.rect(14, yInicio, 182, 8, "F");
-
-        // Texto del título en teal
         doc.setFontSize(8);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(...teal);
         doc.text(titulo, 17, yInicio + 5.5);
 
         let y = yInicio + 13;
-
         filas.forEach(([label, val], i) => {
-            // Fondo alternado: gris muy claro en filas pares
             if (i % 2 === 0) {
                 doc.setFillColor(...grisClaro);
                 doc.rect(14, y - 4.5, 182, 8, "F");
             }
-            // Label a la izquierda
             doc.setFont("helvetica", "normal");
             doc.setTextColor(...gris);
             doc.setFontSize(8.5);
             doc.text(label, 17, y);
-            // Valor a la derecha
             doc.setFont("helvetica", "bold");
             doc.setTextColor(...negro);
             doc.setFontSize(9);
             doc.text(String(val), 193, y, { align: "right" });
             y += 8.5;
         });
-
-        // Línea de cierre de sección
         doc.setDrawColor(...borde);
         doc.setLineWidth(0.3);
         doc.line(14, y, 196, y);
-
-        return y + 6;  // retorna Y para la siguiente sección
+        return y + 6;
     }
 
-    // ── Potencial remanente: texto especial si es negativo ────────────────
+    // Potencial remanente (texto especial si negativo)
     const potencial = d.potencial_remanente_m2 != null
         ? (d.potencial_remanente_m2 < 0
-            ? "Capacidad constructiva por encima del FOT vigente"
+            ? "Por encima del FOT vigente"
             : `${f(d.potencial_remanente_m2)} m²`)
         : "—";
 
-    // ── Sección: capacidad constructiva ───────────────────────────────────
+    // ── Sección 1: capacidad constructiva ─────────────────────────────────
     let y = seccion("CAPACIDAD CONSTRUCTIVA", [
-        ["Superficie edificable máx.", d.superficie_edificable_max_m2 != null ? `${f(d.superficie_edificable_max_m2)} m²` : "—"],
-        ["Potencial remanente",         potencial],
-        ["Altura máxima permitida",     d.altura_maxima_m != null ? `${f(d.altura_maxima_m, 1)} m` : "—"],
-        ["Pisos estimados",             d.pisos_estimados != null ? `${d.pisos_estimados} pisos` : "—"],
-        ["FOT",                         d.fot != null ? f(d.fot, 2) : "—"],
+        ["Superficie edificable máx. en m²", d.superficie_edificable_max_m2 != null ? `${f(d.superficie_edificable_max_m2)} m²` : "—"],
+        ["Potencial remanente en m²",         potencial],
+        ["Altura máxima permitida en m",      d.altura_maxima_m  != null ? `${f(d.altura_maxima_m, 1)} m` : "—"],
+        ["Pisos estimados",                   d.pisos_estimados  != null ? String(d.pisos_estimados)      : "—"],
+        ["FOT",                               d.fot              != null ? f(d.fot, 2)                    : "—"],
     ], 52);
 
-    // ── Sección: terreno y normativa ──────────────────────────────────────
+    // ── Sección 2: terreno y normativa ────────────────────────────────────
     y = seccion("TERRENO Y NORMATIVA", [
-        ["Superficie del terreno",  d.superficie_terreno_m2 != null ? `${f(d.superficie_terreno_m2)} m²` : "—"],
-        ["Frente / fondo",          d.frente_m && d.fondo_m ? `${f(d.frente_m, 2)} m · ${f(d.fondo_m, 2)} m` : "—"],
-        ["Distrito urbanístico",    d.distrito || "—"],
-        ["Uso permitido",           d.uso_permitido || "—"],
-        ["Protección patrimonial",  d.proteccion_patrimonial ? "Sí" : "No"],
-        ["Riesgo hídrico",          d.riesgo_hidrico ? "Sí" : "No"],
+        ["Frente / fondo",                   d.frente_m && d.fondo_m
+            ? `${f(d.frente_m, 2)} m · ${f(d.fondo_m, 2)} m` : "—"],
+        ["Superficie del terreno",           d.superficie_terreno_m2          != null ? `${f(d.superficie_terreno_m2)} m²`          : "—"],
+        ["Superficie edificada actualmente", d.superficie_edificada_actual_m2 != null ? `${f(d.superficie_edificada_actual_m2)} m²` : "—"],
+        ["Unidades funcionales",             d.unidades_funcionales           != null ? String(d.unidades_funcionales)               : "—"],
+        ["Pisos sobre rasante",              d.pisos_sobre_rasante            != null ? String(d.pisos_sobre_rasante)                : "—"],
+        ["Pisos bajo rasante",               d.pisos_bajo_rasante             != null ? String(d.pisos_bajo_rasante)                 : "—"],
+        ["Distrito urbanístico",             d.distrito       || "—"],
+        ["Uso permitido",                    d.uso_permitido  || "—"],
+        ["Protección patrimonial",           d.proteccion_patrimonial ? "Sí" : "No"],
+        ["Riesgo hídrico",                   d.riesgo_hidrico         ? "Sí" : "No"],
     ], y);
 
-    // ── Sección: identificación ───────────────────────────────────────────
+    // ── Sección 3: identificación ─────────────────────────────────────────
     y = seccion("IDENTIFICACIÓN", [
-        ["SMP",         d.smp ? d.smp.toUpperCase() : "—"],
+        ["SMP",         d.smp    ? d.smp.toUpperCase()  : "—"],
+        ["Barrio",      d.barrio ? d.barrio              : "—"],
+        ["Comuna",      d.comuna ? `Comuna ${d.comuna}`  : "—"],
         ["Coordenadas", d.coordenadas
             ? `${d.coordenadas.lat.toFixed(6)}, ${d.coordenadas.lng.toFixed(6)}`
             : "—"],
@@ -354,7 +369,6 @@ function descargarPDF() {
     doc.setTextColor(148, 163, 184);
     doc.text("Los datos son orientativos. Verificar con organismos oficiales del GCBA.", 14, footerY + 13);
 
-    // ── Guardar con nombre basado en el SMP ───────────────────────────────
     const nombre = d.smp
         ? `parcela_${d.smp.replace(/-/g, "_").toUpperCase()}.pdf`
         : "parcela_caba.pdf";
@@ -362,13 +376,9 @@ function descargarPDF() {
 }
 
 // ── Ver en Realidad Aumentada ─────────────────────────────────────────────
-// Guarda los datos de la parcela en sessionStorage y abre ar_view.html
 function abrirAR() {
     if (!datosActuales) return;
     const d = datosActuales;
-
-    // Calcula frente y fondo: usa los datos reales si existen,
-    // si no aproxima como raíz cuadrada de la superficie (lote cuadrado)
     const ladoAprox = Math.sqrt(d.superficie_terreno_m2 || 100);
     const datos = {
         altura_maxima_m:       d.altura_maxima_m       || 15,
@@ -383,8 +393,6 @@ function abrirAR() {
 }
 
 // ── Compartir resultado ───────────────────────────────────────────────────
-// Copia al portapapeles una URL con la dirección como parámetro
-// Al abrir esa URL, la página ejecuta la consulta automáticamente
 function compartir() {
     if (!datosActuales) return;
     const dir = encodeURIComponent(document.getElementById("input-dir").value.trim());
@@ -397,7 +405,6 @@ function compartir() {
 }
 
 // ── Carga automática desde URL con ?direccion= ────────────────────────────
-// Permite que los links compartidos ejecuten la búsqueda al abrirse
 window.addEventListener("load", () => {
     const params = new URLSearchParams(window.location.search);
     const dir = params.get("direccion");
